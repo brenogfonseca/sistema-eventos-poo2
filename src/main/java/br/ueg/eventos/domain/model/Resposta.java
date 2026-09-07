@@ -9,18 +9,23 @@ public class Resposta {
     private Integer idUsuario;
     private String valor;
 
-    // Construtor para criação de uma submissão de resposta.
-    public Resposta(Integer id, Integer idQuestao, Integer idUsuario, String valor) {
+    // Construtor para CRIAR uma nova resposta (sem ID)
+    public Resposta(Integer idQuestao, Integer idUsuario, String valor) {
         if (idQuestao == null || idQuestao <= 0) {
             throw new RegraNegocioException("A resposta deve estar vinculada a um ID de questão válido.");
         }
         if (idUsuario == null || idUsuario <= 0) {
             throw new RegraNegocioException("A resposta deve identificar um ID de usuário válido.");
         }
-        this.id = id;
         this.idQuestao = idQuestao;
         this.idUsuario = idUsuario;
         setValorComValidacao(valor);
+    }
+
+    // Construtor para RECUPERAR do banco (com ID)
+    public Resposta(Integer id, Integer idQuestao, Integer idUsuario, String valor) {
+        this(idQuestao, idUsuario, valor); // Reaproveita as validações
+        this.id = id;
     }
 
     // Permite que o participante edite/atualize o conteúdo da sua resposta (se for permitido(RN-14)).
