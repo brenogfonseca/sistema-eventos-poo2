@@ -12,18 +12,22 @@ public class Questionario {
     private String titulo;
     private List<Questao> questoes;
 
-    // Construtor para inicialização ou reconstituição do Questionário.
-    public Questionario(Integer id, Integer idEvento, String titulo) {
+// Construtor para CRIAR um novo questionário (sem ID)
+    public Questionario(Integer idEvento, String titulo) {
         if (idEvento == null || idEvento <= 0) {
             throw new RegraNegocioException("O questionário deve obrigatoriamente estar vinculado a um ID de evento válido.");
         }
         setTituloComValidacao(titulo);
         
-        this.id = id;
         this.idEvento = idEvento;
         this.questoes = new ArrayList<>();
     }
 
+    // Construtor para RECUPERAR do banco (com ID)
+    public Questionario(Integer id, Integer idEvento, String titulo) {
+        this(idEvento, titulo); // Reaproveita as validações do construtor acima
+        this.id = id;
+    }
     // Permite reconfigurar/atualizar o título do questionário.
     public void alterarTitulo(String novoTitulo) {
         setTituloComValidacao(novoTitulo);
