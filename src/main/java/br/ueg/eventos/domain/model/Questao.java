@@ -16,15 +16,20 @@ public class Questao {
     private TipoQuestao tipo;
     private Integer idQuestionario;
 
-    // Construtor para criação ou reconstituição de uma Questão.
-    public Questao(Integer id, String enunciado, TipoQuestao tipo, Integer idQuestionario) {
+   // Construtor para CRIAR uma nova questão (sem ID)
+    public Questao(String enunciado, TipoQuestao tipo, Integer idQuestionario) {
         if (idQuestionario == null || idQuestionario <= 0) {
             throw new RegraNegocioException("A questão precisa estar vinculada a um ID de questionário válido.");
         }
-        this.id = id;
         this.idQuestionario = idQuestionario;
         setEnunciadoComValidacao(enunciado);
         setTipoComValidacao(tipo);
+    }
+
+    // Construtor para RECUPERAR do banco (com ID)
+    public Questao(Integer id, String enunciado, TipoQuestao tipo, Integer idQuestionario) {
+        this(enunciado, tipo, idQuestionario); // Reaproveita as validações
+        this.id = id;
     }
 
     // Permite a alteração/atualização do enunciado da questão.
