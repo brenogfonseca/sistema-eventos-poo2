@@ -11,7 +11,7 @@ public class Inscricao {
 
     public Inscricao(Integer idAtividade, Integer idUsuario) {
         validarId(idAtividade, "atividade");
-        validarId(idUsuario, "usuário");
+        validarId(idUsuario, "usuario");
 
         this.idAtividade = idAtividade;
         this.idUsuario = idUsuario;
@@ -24,9 +24,11 @@ public class Inscricao {
             Integer idUsuario,
             boolean cancelada
     ) {
-        validarId(id, "inscrição");
+        if (id != null) {
+            validarId(id, "inscrição");
+        }
         validarId(idAtividade, "atividade");
-        validarId(idUsuario, "usuário");
+        validarId(idUsuario, "usuario");
 
         this.id = id;
         this.idAtividade = idAtividade;
