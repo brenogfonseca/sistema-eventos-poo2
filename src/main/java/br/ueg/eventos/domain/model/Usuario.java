@@ -6,45 +6,33 @@ public class Usuario {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$");
     private static final Pattern SENHA_PATTERN = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#&*]).{8,}$");
 
-    //atributos
+    //Atributos
     private Integer id;
     private String nome;
     private String email;
     private String senha;
     private Perfil perfil;
-    private TipoUsuario tipo;
 
 
-    //construtores:
-    // CONSTRUTOR: Para criar um usuário NOVO (O Java deixa o 'id' como null temporariamente, quem vai preencher é o banco de dados)
-    public Usuario(String nome, String email, String senha, Perfil perfil, TipoUsuario tipo) {
-        this.id = null; // O banco de dados vai gerar esse cara depois!
-        alterarNome(nome);
-        alterarEmail(email);
-        alterarSenha(senha);
-        
-        // Validação simples apenas para garantir que não enviaram null
-        if (perfil == null) throw new IllegalArgumentException("O perfil não pode ser nulo!");
-        if (tipo == null) throw new IllegalArgumentException("O tipo não pode ser nulo!");
-        
-        this.perfil = perfil;
-        this.tipo = tipo;
+    //Construtores:
+    //CONSTRUTOR: Para criar um usuário NOVO (O Java deixa o 'id' como null temporariamente, quem vai preencher o id é o banco de dados)
+    //Usando o this() para chamar o outro construtor e evitar duplicação de código. Clean Code, pessoal!! =^.^=
+    public Usuario(String nome, String email, String senha, Perfil perfil) {
+        this(null, nome, email, senha, perfil);
     }
 
 
-    // CONSTRUTOR: Para buscas.
-    public Usuario(Integer id, String nome, String email, String senha, Perfil perfil, TipoUsuario tipo) {
+    //CONSTRUTOR: Para buscas.
+    public Usuario(Integer id, String nome, String email, String senha, Perfil perfil) {
         this.id = id;
         alterarNome(nome);
         alterarEmail(email);
         alterarSenha(senha);
 
-        // Validação simples apenas para garantir que não enviaram null
+        //Validação simples apenas para garantir que não enviaram null
         if (perfil == null) throw new IllegalArgumentException("O perfil não pode ser nulo!");
-        if (tipo == null) throw new IllegalArgumentException("O tipo não pode ser nulo!");
-
+        
         this.perfil = perfil;
-        this.tipo = tipo;
     }
 
 
@@ -80,6 +68,20 @@ public class Usuario {
         this.senha = novaSenha;
     }
 
+    //MÉTODO BLINDADO: Exige saber QUEM está mandando alterar
+    public void alterarPerfil(Usuario usuarioExecutor, Perfil novoPerfil) {
+        if (novoPerfil == null) {
+            throw new IllegalArgumentException("O perfil não pode ser nulo!");
+        }
+        
+        //Regra de segurança corporativa direto no coração do domínio (Evita erros na camada Service)
+        if (!usuarioExecutor.podeAlterarPerfil()) {
+            throw new SecurityException("Operação negada: Apenas administradores podem alterar o perfil de um usuário.");
+        }
+        
+        this.perfil = novoPerfil;
+    }
+
 
     //Getters (Não possui Setters, pois se não qualquer classe pode alterar os atributos do usuário)
     public Integer getId() {return id;}
@@ -87,6 +89,25 @@ public class Usuario {
     public String getEmail() {return email;}
     public String getSenha() {return senha;}
     public Perfil getPerfil() {return perfil;}
-    public TipoUsuario getTipo() {return tipo;}
+
+
+    //Composição: (Permissões de cada perfil)
+    //Foram adicionadas regras cuja execução depende apenas do perfil do usuário. Não foram adicionadas regras que dependem se o usuário é organizador ou participante, pois isso é função da classe que sabe quem é organizador ou participante do evento.
+    public boolean podeAlterarPerfil() {
+        return perfil == Perfil.ADMINISTRADOR;
+    }
+
+    public boolean podeGerenciarUsuariosEOutrosEventos() {
+        return this.perfil == Perfil.ADMINISTRADOR;
+    }
+
+    public boolean podeIniciarCadastro() {
+        return this.perfil == Perfil.VISITANTE;
+    }
+
+
 
 }
+
+//OBS1: O enum Perfil é usado para definir o perfil do usuário, enquanto o enum TipoUsuario foi removido da classe Usuario, pois se permanecem na mesma classe um administrador ou um usuario não poderiam ser um participante do evento ou um organizador.
+//OBS2: Não iremos usar herança para os perfis de usuário, pois isso os tornaria imutáveis durante a execução além de gerar uma complexidade desnecessária. Iremos usar composição para configurar as mermissões de cada perfil.
