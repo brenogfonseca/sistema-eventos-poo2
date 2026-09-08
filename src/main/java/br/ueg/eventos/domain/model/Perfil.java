@@ -1,5 +1,5 @@
 public enum Perfil {
-    ORGANIZADOR,
-    ALUNO,
-    PALESTRANTE;
+    ADMINISTRADOR,
+    USUARIO,
+    VISITANTE;
 }
