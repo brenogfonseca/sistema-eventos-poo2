@@ -1,4 +1,7 @@
-import java.util.regex.Pattern;
+package br.ueg.eventos.domain.model;
+
+import br.ueg.eventos.domain.exception.RegraNegocioException;
+import  java.util.regex.Pattern;
 
 public class Usuario {
 
@@ -15,14 +18,14 @@ public class Usuario {
 
 
     //Construtores:
-    //CONSTRUTOR: Para criar um usuário NOVO (O Java deixa o 'id' como null temporariamente, quem vai preencher o id é o banco de dados)
+    //CONSTRUTOR 1: Para criar um usuário NOVO (O Java deixa o 'id' como null temporariamente, quem vai preencher o id é o banco de dados)
     //Usando o this() para chamar o outro construtor e evitar duplicação de código. Clean Code, pessoal!! =^.^=
     public Usuario(String nome, String email, String senha, Perfil perfil) {
         this(null, nome, email, senha, perfil);
     }
 
 
-    //CONSTRUTOR: Para buscas.
+    //CONSTRUTOR 2: Para buscas.
     public Usuario(Integer id, String nome, String email, String senha, Perfil perfil) {
         this.id = id;
         alterarNome(nome);
@@ -30,7 +33,7 @@ public class Usuario {
         alterarSenha(senha);
 
         //Validação simples apenas para garantir que não enviaram null
-        if (perfil == null) throw new IllegalArgumentException("O perfil não pode ser nulo!");
+        if (perfil == null) throw new RegraNegocioException("O perfil não pode ser nulo!");
         
         this.perfil = perfil;
     }
@@ -39,18 +42,18 @@ public class Usuario {
     //Métodos de ação
     public void alterarNome(String novoNome) {
         if (novoNome == null || novoNome.trim().isEmpty()) {
-            throw new IllegalArgumentException("O nome não pode estar em branco!");
+            throw new RegraNegocioException("O nome não pode estar em branco!");
         }
         this.nome = novoNome;
     }
 
     public void alterarEmail(String novoEmail) {
         if (novoEmail == null || novoEmail.trim().isEmpty()) {
-            throw new IllegalArgumentException("O email não pode estar em branco!");
+            throw new RegraNegocioException("O email não pode estar em branco!");
         }
 
         if (!EMAIL_PATTERN.matcher(novoEmail).matches()) {
-            throw new IllegalArgumentException("O formato do e-mail é inválido.");
+            throw new RegraNegocioException("O formato do e-mail é inválido.");
         }
 
         this.email = novoEmail;
@@ -58,11 +61,11 @@ public class Usuario {
 
     public void alterarSenha(String novaSenha) {
         if (novaSenha == null || novaSenha.trim().isEmpty()) {
-            throw new IllegalArgumentException("A senha não pode estar em branco!");
+            throw new RegraNegocioException("A senha não pode estar em branco!");
         }
 
         if (!SENHA_PATTERN.matcher(novaSenha).matches()) {
-            throw new IllegalArgumentException("A senha deve conter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.");
+            throw new RegraNegocioException("A senha deve conter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.");
         }
 
         this.senha = novaSenha;
@@ -71,12 +74,12 @@ public class Usuario {
     //MÉTODO BLINDADO: Exige saber QUEM está mandando alterar
     public void alterarPerfil(Usuario usuarioExecutor, Perfil novoPerfil) {
         if (novoPerfil == null) {
-            throw new IllegalArgumentException("O perfil não pode ser nulo!");
+            throw new RegraNegocioException("O perfil não pode ser nulo!");
         }
         
         //Regra de segurança corporativa direto no coração do domínio (Evita erros na camada Service)
         if (!usuarioExecutor.podeAlterarPerfil()) {
-            throw new SecurityException("Operação negada: Apenas administradores podem alterar o perfil de um usuário.");
+            throw new RegraNegocioException("Operação negada: Apenas administradores podem alterar o perfil de um usuário.");
         }
         
         this.perfil = novoPerfil;
