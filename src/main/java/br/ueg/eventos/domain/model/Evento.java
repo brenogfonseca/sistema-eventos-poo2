@@ -2,7 +2,7 @@
 
 public class Evento {
     private int id;
-    private String Nome;
+    private String nome;
     private boolean deletado;
     private int CapacidadeMaxima;
     private int trilha;
@@ -12,7 +12,7 @@ public class Evento {
 
     public Evento(int id, String nome, boolean deletado, int trilha, int tipo, boolean certificado, int frequencia) {
         this.id = id;
-        Nome = nome;
+        this.nome = nome;
         this.deletado = deletado;
         this.trilha = trilha;
         this.tipo = tipo;
@@ -33,7 +33,7 @@ public class Evento {
         this.frequencia = frequencia.intValue();
         this.certificado = certificado;
         this.deletado = deletado;
-        this.Nome = nome;
+        this.nome = nome;
     }
 
     private void setNome(String nome) {
@@ -78,7 +78,7 @@ public class Evento {
     }
 
     public String getNome() {
-        return Nome;
+        return nome;
     }
 
     public boolean isDeletado() {
