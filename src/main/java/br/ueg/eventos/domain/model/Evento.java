@@ -104,11 +104,4 @@ public class Evento {
     public int getFrequencia() {
         return frequencia;
     }
-
-    public void setCapacidadeMaxima(int capacidadeMaxima) {
-        if (capacidadeMaxima < 0) {
-            throw new IllegalArgumentException("Capacidade máxima não pode ser negativa.");
-        }
-        this.CapacidadeMaxima = capacidadeMaxima;
-    }
 }
