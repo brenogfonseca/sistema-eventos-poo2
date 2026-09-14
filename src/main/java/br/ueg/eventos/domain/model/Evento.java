@@ -5,31 +5,23 @@ public class Evento {
     private String nome;
     private boolean deletado;
     private int CapacidadeMaxima;
-    private int trilha;
-    private int tipo;
     private boolean certificado;
     private int frequencia;
 
-    public Evento(int id, String nome, boolean deletado, int trilha, int tipo, boolean certificado, int frequencia) {
+    public Evento(int id, String nome, boolean deletado, boolean certificado, int frequencia) {
         this.id = id;
         this.nome = nome;
         this.deletado = deletado;
-        this.trilha = trilha;
-        this.tipo = tipo;
         this.certificado = certificado;
         this.frequencia = frequencia;
     }
-    public Evento(Long id, String nome, boolean deletado, Long trilha, Long tipo, boolean certificado, Long frequencia) {
+    public Evento(Long id, String nome, boolean deletado, boolean certificado, Long frequencia) {
         setNome(nome);
         setDeletado(deletado);
-        setTrilha(trilha);
-        setTipo(tipo);
         setCertificado(certificado);
         setFrequencia(frequencia);
         setId(id);
         this.id = id.intValue();   
-        this.trilha = trilha.intValue();
-        this.tipo = tipo.intValue();
         this.frequencia = frequencia.intValue();
         this.certificado = certificado;
         this.deletado = deletado;
@@ -44,14 +36,6 @@ public class Evento {
 
     private void setId(Long id) {
         this.id = id.intValue();
-    }
-
-    private void setTrilha(Long trilha) {
-        this.trilha = trilha.intValue();
-    }
-
-    private void setTipo(Long tipo) {
-        this.tipo = tipo.intValue();
     }
 
     private void setCertificado(boolean certificado) {
@@ -87,14 +71,6 @@ public class Evento {
 
     public int getCapacidadeMaxima() {
         return CapacidadeMaxima;
-    }
-
-    public int getTrilha() {
-        return trilha;
-    }
-
-    public int getTipo() {
-        return tipo;
     }
 
     public boolean isCertificado() {
