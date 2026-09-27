@@ -11,13 +11,13 @@ public class Questao {
         ESCALA_NUMERICA
     }
  
-    private Integer id;
+    private Long id;
     private String enunciado;
     private TipoQuestao tipo;
-    private Integer idQuestionario;
+    private Long idQuestionario;
 
    // Construtor para CRIAR uma nova questão (sem ID)
-    public Questao(String enunciado, TipoQuestao tipo, Integer idQuestionario) {
+    public Questao(String enunciado, TipoQuestao tipo, Long idQuestionario) {
         if (idQuestionario == null || idQuestionario <= 0) {
             throw new RegraNegocioException("A questão precisa estar vinculada a um ID de questionário válido.");
         }
@@ -27,7 +27,7 @@ public class Questao {
     }
 
     // Construtor para RECUPERAR do banco (com ID)
-    public Questao(Integer id, String enunciado, TipoQuestao tipo, Integer idQuestionario) {
+    public Questao(Long id, String enunciado, TipoQuestao tipo, Long idQuestionario) {
         this(enunciado, tipo, idQuestionario); // Reaproveita as validações
         this.id = id;
     }
@@ -56,7 +56,7 @@ public class Questao {
         this.tipo = tipo;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
     public String getEnunciado() {
@@ -65,7 +65,7 @@ public class Questao {
     public TipoQuestao getTipo() {
         return tipo;
     }
-    public Integer getIdQuestionario() {
+    public Long getIdQuestionario() {
         return idQuestionario;
     }
 }
