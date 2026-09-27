@@ -2,7 +2,7 @@ package br.ueg.eventos.application.service.usuario;
 
 import br.ueg.eventos.application.port.in.usuario.AlterarSenhaUsuarioPort;
 import br.ueg.eventos.application.port.out.PasswordEncryptor;
-import br.ueg.eventos.application.port.out.UsuarioRepository;
+import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Usuario;
 
@@ -13,10 +13,10 @@ import br.ueg.eventos.domain.model.Usuario;
  */
 public class AlterarSenhaUsuarioService implements AlterarSenhaUsuarioPort {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioRepositoryPort usuarioRepository;
     private final PasswordEncryptor passwordEncryptor;
 
-    public AlterarSenhaUsuarioService(UsuarioRepository usuarioRepository, PasswordEncryptor passwordEncryptor) {
+    public AlterarSenhaUsuarioService(UsuarioRepositoryPort usuarioRepository, PasswordEncryptor passwordEncryptor) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncryptor = passwordEncryptor;
     }

@@ -1,7 +1,7 @@
 package br.ueg.eventos.application.service.usuario;
 
 import br.ueg.eventos.application.port.in.usuario.BuscarUsuarioPorIdPort;
-import br.ueg.eventos.application.port.out.UsuarioRepository;
+import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Usuario;
 
@@ -11,9 +11,9 @@ import br.ueg.eventos.domain.model.Usuario;
  */
 public class BuscarUsuarioPorIdService implements BuscarUsuarioPorIdPort {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioRepositoryPort usuarioRepository;
 
-    public BuscarUsuarioPorIdService(UsuarioRepository usuarioRepository) {
+    public BuscarUsuarioPorIdService(UsuarioRepositoryPort usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
     }
 

@@ -1,7 +1,7 @@
 package br.ueg.eventos.application.service.usuario;
 
 import br.ueg.eventos.application.port.in.usuario.ListarUsuariosPort;
-import br.ueg.eventos.application.port.out.UsuarioRepository;
+import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Usuario;
 
@@ -13,9 +13,9 @@ import java.util.List;
  */
 public class ListarUsuariosService implements ListarUsuariosPort {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioRepositoryPort usuarioRepository;
 
-    public ListarUsuariosService(UsuarioRepository usuarioRepository) {
+    public ListarUsuariosService(UsuarioRepositoryPort usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
     }
 

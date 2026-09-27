@@ -1,6 +1,6 @@
 package br.ueg.eventos.infrastructure.adapter.out.persistence;
 
-import br.ueg.eventos.application.port.out.UsuarioRepository;
+import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.domain.model.Usuario;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Simula a persistência em banco de dados usando um Map thread-safe.
  * Espelha o padrão já adotado pelo InMemoryEventoRepository.
  */
-public class InMemoryUsuarioRepository implements UsuarioRepository {
+public class InMemoryUsuarioRepository implements UsuarioRepositoryPort {
 
     private final Map<Integer, Usuario> usuarios = new ConcurrentHashMap<>();
     private final AtomicInteger idGenerator = new AtomicInteger(1);

@@ -10,7 +10,7 @@ import java.util.Optional;
  * Qualquer mecanismo de armazenamento (in-memory, banco de dados, etc.) deve
  * implementar esta interface.
  */
-public interface UsuarioRepository {
+public interface UsuarioRepositoryPort {
 
     /**
      * Salva um usuário. Se o id for nulo, cria um novo registro; caso

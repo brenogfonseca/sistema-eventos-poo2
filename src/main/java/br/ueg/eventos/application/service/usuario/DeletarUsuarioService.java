@@ -1,7 +1,7 @@
 package br.ueg.eventos.application.service.usuario;
 
 import br.ueg.eventos.application.port.in.usuario.DeletarUsuarioPort;
-import br.ueg.eventos.application.port.out.UsuarioRepository;
+import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Usuario;
 
@@ -12,9 +12,9 @@ import br.ueg.eventos.domain.model.Usuario;
  */
 public class DeletarUsuarioService implements DeletarUsuarioPort {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioRepositoryPort usuarioRepository;
 
-    public DeletarUsuarioService(UsuarioRepository usuarioRepository) {
+    public DeletarUsuarioService(UsuarioRepositoryPort usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
     }
 

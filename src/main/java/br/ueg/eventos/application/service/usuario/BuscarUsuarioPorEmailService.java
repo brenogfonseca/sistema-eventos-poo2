@@ -1,7 +1,7 @@
 package br.ueg.eventos.application.service.usuario;
 
 import br.ueg.eventos.application.port.in.usuario.BuscarUsuarioPorEmailPort;
-import br.ueg.eventos.application.port.out.UsuarioRepository;
+import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.domain.model.Usuario;
 
 import java.util.Optional;
@@ -12,9 +12,9 @@ import java.util.Optional;
  */
 public class BuscarUsuarioPorEmailService implements BuscarUsuarioPorEmailPort {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioRepositoryPort usuarioRepository;
 
-    public BuscarUsuarioPorEmailService(UsuarioRepository usuarioRepository) {
+    public BuscarUsuarioPorEmailService(UsuarioRepositoryPort usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
     }
 
