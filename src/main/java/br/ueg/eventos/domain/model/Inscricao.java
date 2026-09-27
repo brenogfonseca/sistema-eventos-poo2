@@ -6,8 +6,7 @@ public class Inscricao {
 
     private Long id;
     private Long idAtividade;
-    private Long
-     idUsuario;
+    private Long idUsuario;
     private boolean cancelada;
 
     public Inscricao(Long idAtividade, Long idUsuario) {
