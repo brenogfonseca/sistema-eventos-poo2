@@ -1,7 +1,7 @@
 package br.ueg.eventos.application.service.evento;
 
 import br.ueg.eventos.application.port.in.evento.CriarEventoPort;
-import br.ueg.eventos.application.port.out.EventoRepository;
+import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.domain.model.Evento;
 import br.ueg.eventos.domain.model.Periodo;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
@@ -10,9 +10,9 @@ import java.util.List;
 
 public class CriarEventoService implements CriarEventoPort {
 
-    private final EventoRepository eventoRepository;
+    private final EventoRepositoryPort eventoRepository;
 
-    public CriarEventoService(EventoRepository eventoRepository) {
+    public CriarEventoService(EventoRepositoryPort eventoRepository) {
         this.eventoRepository = eventoRepository;
     }
 
