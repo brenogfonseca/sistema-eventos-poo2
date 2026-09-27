@@ -77,7 +77,6 @@ public class Main {
 
         System.out.println("Servidor iniciado na porta 8080.");
         System.out.println("Para testar, envie um POST para http://localhost:8080/eventos");
-        System.out.println(
-                "Body ex: { \"titulo\": \"Symposium POO\", \"descricao\": \"...\", \"inicio\": \"2026-10-01T08:00:00\", \"fim\": \"2026-10-03T18:00:00\", \"capacidade\": 100 }");
+        System.out.println("Body ex: { \"titulo\": \"Symposium POO\", \"descricao\": \"...\", \"inicio\": \"2026-10-01T08:00:00\", \"fim\": \"2026-10-03T18:00:00\", \"capacidade\": 100 }");
     }
 }
