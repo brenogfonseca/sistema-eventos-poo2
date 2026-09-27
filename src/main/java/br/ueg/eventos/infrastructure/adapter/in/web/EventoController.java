@@ -47,12 +47,11 @@ public class EventoController {
             CriarEventoRequest request = ctx.bodyAsClass(CriarEventoRequest.class);
 
             ComandoCriarEvento comando = new ComandoCriarEvento(
-                request.titulo,
-                request.descricao,
-                LocalDateTime.parse(request.inicio),
-                LocalDateTime.parse(request.fim),
-                request.capacidade
-            );
+                    request.titulo,
+                    request.descricao,
+                    LocalDateTime.parse(request.inicio),
+                    LocalDateTime.parse(request.fim),
+                    request.capacidade);
 
             Evento eventoCriado = criarEventoPort.executar(comando);
 

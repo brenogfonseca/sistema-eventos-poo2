@@ -58,4 +58,9 @@ public class InMemoryUsuarioRepository implements UsuarioRepository {
     public List<Usuario> listarTodos() {
         return new ArrayList<>(usuarios.values());
     }
+
+    @Override
+    public void deletar(Integer id) {
+        usuarios.remove(id);
+    }
 }

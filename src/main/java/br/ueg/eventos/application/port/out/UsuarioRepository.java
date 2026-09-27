@@ -43,4 +43,11 @@ public interface UsuarioRepository {
      * @return lista de todos os usuários
      */
     List<Usuario> listarTodos();
+
+    /**
+     * Remove permanentemente um usuário pelo seu identificador.
+     *
+     * @param id o identificador do usuário a ser removido
+     */
+    void deletar(Integer id);
 }
