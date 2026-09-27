@@ -10,9 +10,9 @@ import br.ueg.eventos.application.port.in.usuario.BuscarUsuarioPorIdPort;
 import br.ueg.eventos.application.port.in.usuario.CadastrarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.DeletarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.ListarUsuariosPort;
-import br.ueg.eventos.application.port.out.EventoRepository;
+import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.application.port.out.PasswordEncryptor;
-import br.ueg.eventos.application.port.out.UsuarioRepository;
+import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.application.service.evento.CriarEventoService;
 import br.ueg.eventos.application.service.evento.ListarEventosService;
 import br.ueg.eventos.application.service.usuario.AlterarDadosUsuarioService;
@@ -34,8 +34,8 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("Iniciando Plataforma de Gestão de Eventos (Hexagonal sem Framework pesado no Core)...");
 
-        // --- Composição: Evento ---
-        EventoRepository eventoRepository = new InMemoryEventoRepository();
+        EventoRepositoryPort
+         eventoRepository = new InMemoryEventoRepository();
 
         CriarEventoPort criarEventoPort = new CriarEventoService(eventoRepository);
         ListarEventosPort listarEventosPort = new ListarEventosService(eventoRepository);
@@ -43,7 +43,7 @@ public class Main {
         EventoController eventoController = new EventoController(criarEventoPort, listarEventosPort);
 
         // --- Composição: Usuario ---
-        UsuarioRepository usuarioRepository = new InMemoryUsuarioRepository();
+        UsuarioRepositoryPort usuarioRepository = new InMemoryUsuarioRepository();
         PasswordEncryptor passwordEncryptor = new Sha256PasswordEncryptor();
 
         CadastrarUsuarioPort cadastrarUsuarioPort = new CadastrarUsuarioService(usuarioRepository, passwordEncryptor);
