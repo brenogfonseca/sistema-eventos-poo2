@@ -1,6 +1,6 @@
 package br.ueg.eventos.infrastructure.adapter.out.persistence;
 
-import br.ueg.eventos.application.port.out.EventoRepository;
+import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.domain.model.Evento;
 
 import java.util.ArrayList;
@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class InMemoryEventoRepository implements EventoRepository {
+public class InMemoryEventoRepository implements EventoRepositoryPort {
 
     private final Map<Long, Evento> eventos = new ConcurrentHashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(1);

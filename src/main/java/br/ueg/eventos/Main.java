@@ -2,7 +2,7 @@ package br.ueg.eventos;
 
 import br.ueg.eventos.application.port.in.evento.CriarEventoPort;
 import br.ueg.eventos.application.port.in.evento.ListarEventosPort;
-import br.ueg.eventos.application.port.out.EventoRepository;
+import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.application.service.evento.CriarEventoService;
 import br.ueg.eventos.application.service.evento.ListarEventosService;
 import br.ueg.eventos.infrastructure.adapter.in.web.EventoController;
@@ -13,7 +13,7 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("Iniciando Plataforma de Gestão de Eventos (Hexagonal sem Framework pesado no Core)...");
 
-        EventoRepository eventoRepository = new InMemoryEventoRepository();
+        EventoRepositoryPort eventoRepository = new InMemoryEventoRepository();
 
         CriarEventoPort criarEventoPort = new CriarEventoService(eventoRepository);
         ListarEventosPort listarEventosPort = new ListarEventosService(eventoRepository);

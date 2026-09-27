@@ -4,7 +4,7 @@ import br.ueg.eventos.domain.model.Evento;
 import java.util.List;
 import java.util.Optional;
 
-public interface EventoRepository {
+public interface EventoRepositoryPort {
     Evento salvar(Evento evento);
     Optional<Evento> buscarPorId(Long id);
     List<Evento> listarTodos();
