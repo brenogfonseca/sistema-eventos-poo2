@@ -4,12 +4,13 @@ import br.ueg.eventos.domain.exception.RegraNegocioException;
 
 public class Inscricao {
 
-    private Integer id;
-    private Integer idAtividade;
-    private Integer idUsuario;
+    private Long id;
+    private Long idAtividade;
+    private Long
+     idUsuario;
     private boolean cancelada;
 
-    public Inscricao(Integer idAtividade, Integer idUsuario) {
+    public Inscricao(Long idAtividade, Long idUsuario) {
         validarId(idAtividade, "atividade");
         validarId(idUsuario, "usuario");
 
@@ -19,9 +20,9 @@ public class Inscricao {
     }
 
     public Inscricao(
-            Integer id,
-            Integer idAtividade,
-            Integer idUsuario,
+            Long id,
+            Long idAtividade,
+            Long idUsuario,
             boolean cancelada
     ) {
         if (id != null) {
@@ -36,15 +37,15 @@ public class Inscricao {
         this.cancelada = cancelada;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public Integer getIdAtividade() {
+    public Long getIdAtividade() {
         return idAtividade;
     }
 
-    public Integer getIdUsuario() {
+    public Long getIdUsuario() {
         return idUsuario;
     }
 
@@ -78,7 +79,7 @@ public class Inscricao {
         return !cancelada;
     }
 
-    private void validarId(Integer id, String entidade) {
+    private void validarId(Long id, String entidade) {
 
         if (id == null || id <= 0) {
             throw new RegraNegocioException(
