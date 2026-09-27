@@ -4,13 +4,13 @@ import br.ueg.eventos.domain.exception.RegraNegocioException;
 
 public class Resposta {
 
-    private Integer id;
-    private Integer idQuestao;
+    private Long id;
+    private Long idQuestao;
     private Integer idUsuario;
     private String valor;
 
     // Construtor para CRIAR uma nova resposta (sem ID)
-    public Resposta(Integer idQuestao, Integer idUsuario, String valor) {
+    public Resposta(Long idQuestao, Integer idUsuario, String valor) {
         if (idQuestao == null || idQuestao <= 0) {
             throw new RegraNegocioException("A resposta deve estar vinculada a um ID de questão válido.");
         }
@@ -23,7 +23,7 @@ public class Resposta {
     }
 
     // Construtor para RECUPERAR do banco (com ID)
-    public Resposta(Integer id, Integer idQuestao, Integer idUsuario, String valor) {
+    public Resposta(Long id, Long idQuestao, Integer idUsuario, String valor) {
         this(idQuestao, idUsuario, valor); // Reaproveita as validações
         this.id = id;
     }
@@ -40,10 +40,10 @@ public class Resposta {
         this.valor = valor;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
-    public Integer getIdQuestao() {
+    public Long getIdQuestao() {
         return idQuestao;
     }
     public Integer getIdUsuario() {
