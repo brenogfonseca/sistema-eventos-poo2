@@ -7,8 +7,7 @@ public class Usuario {
 
     // Padrões e constantes
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$");
-    private static final Pattern SENHA_PATTERN = Pattern
-            .compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#&*]).{8,}$");
+    private static final Pattern SENHA_PATTERN = Pattern.compile("^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#&*]).{8,}$");
 
     // Atributos
     private Integer id;
@@ -18,8 +17,7 @@ public class Usuario {
     private Perfil perfil;
 
     // Construtores:
-    // CONSTRUTOR 1: Para criar um usuário NOVO (O Java deixa o 'id' como null
-    // temporariamente, quem vai preencher o id é o banco de dados)
+    // CONSTRUTOR 1: Para criar um usuário NOVO (O Java deixa o 'id' como null temporariamente, quem vai preencher o id é o banco de dados)
     public Usuario(String nome, String email, String senhaLimpa, String hashCriptografado, Perfil perfil) {
         this.id = null;
         alterarNome(nome);
@@ -86,8 +84,7 @@ public class Usuario {
         }
     }
 
-    // Método de ação para quando um usuário autenticado quiser trocar sua senha
-    // antiga por uma nova
+    // Método de ação para quando um usuário autenticado quiser trocar sua senha antiga por uma nova
     public void alterarSenha(String novaSenhaLimpa, String novoHashCriptografado) {
         validarFormatoSenha(novaSenhaLimpa);
 
@@ -103,8 +100,7 @@ public class Usuario {
             throw new RegraNegocioException("O perfil não pode ser nulo!");
         }
 
-        // Regra de segurança corporativa direto no coração do domínio (Evita erros na
-        // camada Service)
+        // Regra de segurança corporativa direto no coração do domínio (Evita erros na camada Service)
         if (!usuarioExecutor.podeAlterarPerfil()) {
             throw new RegraNegocioException(
                     "Operação negada: Apenas administradores podem alterar o perfil de um usuário.");
@@ -113,8 +109,7 @@ public class Usuario {
         this.perfil = novoPerfil;
     }
 
-    // Getters (Não possui Setters, pois se não qualquer classe pode alterar os
-    // atributos do usuário)
+    // Getters (Não possui Setters, pois se não qualquer classe pode alterar os atributos do usuário)
     public Integer getId() {
         return id;
     }
@@ -137,9 +132,7 @@ public class Usuario {
 
     // Composição: (Permissões de cada perfil)
     // Foram adicionadas regras cuja execução depende apenas do perfil do usuário.
-    // Não foram adicionadas regras que dependem se o usuário é organizador ou
-    // participante, pois isso é função da classe que sabe quem é organizador ou
-    // participante do evento.
+    // Não foram adicionadas regras que dependem se o usuário é organizador ou participante, pois isso é função da classe que sabe quem é organizador ou participante do evento.
     public boolean podeAlterarPerfil() {
         return perfil == Perfil.ADMINISTRADOR;
     }
@@ -154,11 +147,5 @@ public class Usuario {
 
 }
 
-// OBS1: O enum Perfil é usado para definir o perfil do usuário, enquanto o enum
-// TipoUsuario foi removido da classe Usuario, pois se permanecem na mesma
-// classe um administrador ou um usuario não poderiam ser um participante do
-// evento ou um organizador.
-// OBS2: Não iremos usar herança para os perfis de usuário, pois isso os
-// tornaria imutáveis durante a execução além de gerar uma complexidade
-// desnecessária. Iremos usar composição para configurar as mermissões de cada
-// perfil.
+// OBS1: O enum Perfil é usado para definir o perfil do usuário, enquanto o enum TipoUsuario foi removido da classe Usuario, pois se permanecem na mesma classe um administrador ou um usuario não poderiam ser um participante do evento ou um organizador.
+// OBS2: Não iremos usar herança para os perfis de usuário, pois isso os tornaria imutáveis durante a execução além de gerar uma complexidade desnecessária. Iremos usar composição para configurar as permissões de cada perfil.
