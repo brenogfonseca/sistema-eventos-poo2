@@ -7,27 +7,28 @@ import java.util.List;
 
 public class Questionario {
 
-    private Integer id;
-    private Integer idEvento;
+    private Long id;
+    private Long idAtividade;
     private String titulo;
-    private List<Questao> questoes;
+    private List<Questao> questoes; 
 
-// Construtor para CRIAR um novo questionário (sem ID)
-    public Questionario(Integer idEvento, String titulo) {
-        if (idEvento == null || idEvento <= 0) {
-            throw new RegraNegocioException("O questionário deve obrigatoriamente estar vinculado a um ID de evento válido.");
+    // Construtor para CRIAR um novo questionário (sem ID)
+    public Questionario(Long idAtividade, String titulo) {
+        if (idAtividade == null || idAtividade <= 0) {
+            throw new RegraNegocioException("O questionário deve obrigatoriamente estar vinculado a um ID de atividade válido.");
         }
         setTituloComValidacao(titulo);
         
-        this.idEvento = idEvento;
+        this.idAtividade = idAtividade;
         this.questoes = new ArrayList<>();
     }
 
     // Construtor para RECUPERAR do banco (com ID)
-    public Questionario(Integer id, Integer idEvento, String titulo) {
-        this(idEvento, titulo); // Reaproveita as validações do construtor acima
+    public Questionario(Long id, Long idAtividade, String titulo) {
+        this(idAtividade, titulo);
         this.id = id;
     }
+
     // Permite reconfigurar/atualizar o título do questionário.
     public void alterarTitulo(String novoTitulo) {
         setTituloComValidacao(novoTitulo);
@@ -51,7 +52,7 @@ public class Questionario {
         }
         this.questoes.add(questao);
     }
-
+    
     // Remove uma questão existente da coleção do questionário.
     public void removerQuestao(Questao questao) {
         if (questao == null || !this.questoes.contains(questao)) {
@@ -61,16 +62,18 @@ public class Questionario {
     }
 
     // Retorna uma visão não modificável da lista de questões para preservar o encapsulamento.
-    public List<Questao> getQuestoes() {
+    public List<Questao> getQuestoes() { // Corrigido com 
         return Collections.unmodifiableList(questoes);
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
-    public Integer getIdEvento() {
-        return idEvento;
+
+    public Long getIdAtividade() {
+        return idAtividade;
     }
+
     public String getTitulo() {
         return titulo;
     }
