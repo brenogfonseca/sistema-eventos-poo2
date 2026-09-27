@@ -34,11 +34,27 @@ public class EventoController {
         public int capacidade;
     }
 
+    public static class ErroResponse {
+        public int status;
+        public String erro;
+        public String mensagem;
+
+        public ErroResponse(int status, String erro, String mensagem) {
+            this.status = status;
+            this.erro = erro;
+            this.mensagem = mensagem;
+        }
+    }
+
     private void listarEventos(Context ctx) {
         try {
             ctx.status(HttpStatus.OK).json(listarEventosPort.executar());
         } catch (Exception e) {
-            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).result("Erro interno: " + e.getMessage());
+            ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).json(new ErroResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.getStatusCode(),
+                "Erro interno",
+                "Erro interno: " + e.getMessage()
+            ));
         }
     }
 
