@@ -67,6 +67,19 @@ import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryFrequenciaR
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryInscricaoRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryUsuarioRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.Sha256PasswordEncryptor;
+import br.ueg.eventos.application.port.in.local.AlterarLocalPort;
+import br.ueg.eventos.application.port.in.local.BuscarLocalPorIdPort;
+import br.ueg.eventos.application.port.in.local.CadastrarLocalPort;
+import br.ueg.eventos.application.port.in.local.DeletarLocalPort;
+import br.ueg.eventos.application.port.in.local.ListarLocaisPort;
+import br.ueg.eventos.application.port.out.LocalRepositoryPort;
+import br.ueg.eventos.application.service.local.AlterarLocalService;
+import br.ueg.eventos.application.service.local.BuscarLocalPorIdService;
+import br.ueg.eventos.application.service.local.CadastrarLocalService;
+import br.ueg.eventos.application.service.local.DeletarLocalService;
+import br.ueg.eventos.application.service.local.ListarLocaisService;
+import br.ueg.eventos.infrastructure.adapter.in.web.LocalController;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryLocalRepository;
 import io.javalin.Javalin;
 
 public class Main {
@@ -89,6 +102,8 @@ public class Main {
                 new InMemoryUsuarioRepository();
         PasswordEncryptor passwordEncryptor =
                 new Sha256PasswordEncryptor();
+        LocalRepositoryPort localRepository =
+                new InMemoryLocalRepository();
 
         // Evento
         CriarEventoPort criarEventoPort =
@@ -218,6 +233,25 @@ public class Main {
                 deletarPort
         );
 
+        // Local
+        CadastrarLocalPort cadastrarLocalPort =
+                new CadastrarLocalService(localRepository);
+        ListarLocaisPort listarLocaisPort =
+                new ListarLocaisService(localRepository);
+        BuscarLocalPorIdPort buscarLocalPorIdPort =
+                new BuscarLocalPorIdService(localRepository);
+        AlterarLocalPort alterarLocalPort =
+                new AlterarLocalService(localRepository);
+        DeletarLocalPort deletarLocalPort =
+                new DeletarLocalService(localRepository);
+        LocalController localController = new LocalController(
+                cadastrarLocalPort,
+                listarLocaisPort,
+                buscarLocalPorIdPort,
+                alterarLocalPort,
+                deletarLocalPort
+        );
+
         // Servidor e rotas
         Javalin app = Javalin.create(config -> {
             config.showJavalinBanner = false;
@@ -228,6 +262,7 @@ public class Main {
         inscricaoController.registerRoutes(app);
         frequenciaController.registerRoutes(app);
         usuarioController.registerRoutes(app);
+        localController.registerRoutes(app);
 
         app.start(8080);
 
