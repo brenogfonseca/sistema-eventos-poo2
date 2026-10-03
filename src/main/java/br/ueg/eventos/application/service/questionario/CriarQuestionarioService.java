@@ -1,7 +1,7 @@
 package br.ueg.eventos.application.service.questionario;
 
 import br.ueg.eventos.application.port.in.questionario.CriarQuestionarioPort;
-import br.ueg.eventos.application.port.out.QuestionarioRepository;
+import br.ueg.eventos.application.port.out.QuestionarioRepositoryPort;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Questionario;
 
