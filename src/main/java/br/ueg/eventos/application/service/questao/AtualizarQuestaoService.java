@@ -1,0 +1,31 @@
+package br.ueg.eventos.application.service.questao;
+
+import br.ueg.eventos.application.port.in.questao.AtualizarQuestaoPort;
+import br.ueg.eventos.application.port.out.QuestaoRepository;
+import br.ueg.eventos.domain.exception.RegraNegocioException;
+import br.ueg.eventos.domain.model.Questao;
+import java.util.Optional;
+
+public class AtualizarQuestaoService implements AtualizarQuestaoPort {
+
+    private final QuestaoRepository questaoRepository;
+
+    public AtualizarQuestaoService(QuestaoRepository questaoRepository) {
+        this.questaoRepository = questaoRepository;
+    }
+
+    @Override
+    public Questao executar(ComandoAtualizarQuestao comando) {
+        Optional<Questao> questaoExistente = questaoRepository.buscarPorId(comando.id);
+        
+        if (questaoExistente.isEmpty()) {
+            throw new RegraNegocioException("Questão não encontrada para atualização.");
+        }
+
+        Questao questao = questaoExistente.get();
+        questao.alterarEnunciado(comando.enunciado);
+        questao.alterarTipo(comando.tipo);
+
+        return questaoRepository.salvar(questao);
+    }
+}
