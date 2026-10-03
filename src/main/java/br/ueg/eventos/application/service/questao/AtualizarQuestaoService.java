@@ -1,7 +1,7 @@
 package br.ueg.eventos.application.service.questao;
 
 import br.ueg.eventos.application.port.in.questao.AtualizarQuestaoPort;
-import br.ueg.eventos.application.port.out.QuestaoRepository;
+import br.ueg.eventos.application.port.out.QuestaoRepositoryPort;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Questao;
 import java.util.Optional;
