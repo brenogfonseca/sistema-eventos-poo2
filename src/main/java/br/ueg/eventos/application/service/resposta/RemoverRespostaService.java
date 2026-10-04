@@ -5,9 +5,9 @@ import br.ueg.eventos.application.port.out.RespostaRepositoryPort;
 
 public class RemoverRespostaService implements RemoverRespostaPort {
 
-    private final RespostaRepository respostaRepository;
+    private final RespostaRepositoryPort respostaRepository;
 
-    public RemoverRespostaService(RespostaRepository respostaRepository) {
+    public RemoverRespostaService(RespostaRepositoryPort respostaRepository) {
         this.respostaRepository = respostaRepository;
     }
 
