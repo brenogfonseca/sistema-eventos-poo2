@@ -4,7 +4,7 @@ import br.ueg.eventos.domain.model.Questao;
 import java.util.List;
 import java.util.Optional;
 
-public interface QuestaoRepository {
+public interface QuestaoRepositoryPort {
     Questao salvar(Questao questao);
     Optional<Questao> buscarPorId(Long id);
     // Retorna uma lista, pois um questionário pode ter várias questões
