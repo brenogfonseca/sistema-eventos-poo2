@@ -25,11 +25,26 @@ import br.ueg.eventos.application.port.in.usuario.BuscarUsuarioPorIdPort;
 import br.ueg.eventos.application.port.in.usuario.CadastrarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.DeletarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.ListarUsuariosPort;
+import br.ueg.eventos.application.port.in.questionario.AtualizarQuestionarioPort;
+import br.ueg.eventos.application.port.in.questionario.BuscarQuestionarioPort;
+import br.ueg.eventos.application.port.in.questionario.CriarQuestionarioPort;
+import br.ueg.eventos.application.port.in.questionario.RemoverQuestionarioPort;
+import br.ueg.eventos.application.port.in.questao.AtualizarQuestaoPort;
+import br.ueg.eventos.application.port.in.questao.BuscarQuestaoNoQuestionarioPort;
+import br.ueg.eventos.application.port.in.questao.CriarQuestaoPort;
+import br.ueg.eventos.application.port.in.questao.RemoverQuestaoPort;
+import br.ueg.eventos.application.port.in.resposta.AtualizarRespostaPort;
+import br.ueg.eventos.application.port.in.resposta.BuscarRespostaPort;
+import br.ueg.eventos.application.port.in.resposta.CriarRespostaPort;
+import br.ueg.eventos.application.port.in.resposta.RemoverRespostaPort;
 import br.ueg.eventos.application.port.out.AtividadeRepositoryPort;
 import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.application.port.out.FrequenciaRepositoryPort;
 import br.ueg.eventos.application.port.out.InscricaoRepositoryPort;
 import br.ueg.eventos.application.port.out.PasswordEncryptor;
+import br.ueg.eventos.application.port.out.QuestionarioRepositoryPort;
+import br.ueg.eventos.application.port.out.QuestaoRepositoryPort;
+import br.ueg.eventos.application.port.out.RespostaRepositoryPort;
 import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.application.service.atividade.AtualizarAtividadeService;
 import br.ueg.eventos.application.service.atividade.BuscarAtividadePorIdService;
@@ -56,16 +71,34 @@ import br.ueg.eventos.application.service.usuario.BuscarUsuarioPorIdService;
 import br.ueg.eventos.application.service.usuario.CadastrarUsuarioService;
 import br.ueg.eventos.application.service.usuario.DeletarUsuarioService;
 import br.ueg.eventos.application.service.usuario.ListarUsuariosService;
+import br.ueg.eventos.application.service.questionario.AtualizarQuestionarioService;
+import br.ueg.eventos.application.service.questionario.BuscarQuestionarioService;
+import br.ueg.eventos.application.service.questionario.CriarQuestionarioService;
+import br.ueg.eventos.application.service.questionario.RemoverQuestionarioService;
+import br.ueg.eventos.application.service.questao.AtualizarQuestaoService;
+import br.ueg.eventos.application.service.questao.BuscarQuestaoNoQuestionarioService;
+import br.ueg.eventos.application.service.questao.CriarQuestaoService;
+import br.ueg.eventos.application.service.questao.RemoverQuestaoService;
+import br.ueg.eventos.application.service.resposta.AtualizarRespostaService;
+import br.ueg.eventos.application.service.resposta.BuscarRespostaService;
+import br.ueg.eventos.application.service.resposta.CriarRespostaService;
+import br.ueg.eventos.application.service.resposta.RemoverRespostaService;
 import br.ueg.eventos.infrastructure.adapter.in.web.AtividadeController;
 import br.ueg.eventos.infrastructure.adapter.in.web.EventoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.FrequenciaController;
 import br.ueg.eventos.infrastructure.adapter.in.web.InscricaoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.UsuarioController;
+import br.ueg.eventos.infrastructure.adapter.in.web.QuestionarioController;
+import br.ueg.eventos.infrastructure.adapter.in.web.QuestaoController;
+import br.ueg.eventos.infrastructure.adapter.in.web.RespostaController;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryAtividadeRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryEventoRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryFrequenciaRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryInscricaoRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryUsuarioRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryQuestionarioRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryQuestaoRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryRespostaRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.Sha256PasswordEncryptor;
 import br.ueg.eventos.application.port.in.local.AlterarLocalPort;
 import br.ueg.eventos.application.port.in.local.BuscarLocalPorIdPort;
@@ -250,6 +283,55 @@ public class Main {
                 buscarLocalPorIdPort,
                 alterarLocalPort,
                 deletarLocalPort
+        );
+
+        // Questionário
+        CriarQuestionarioPort criarQuestionarioPort =
+                new CriarQuestionarioService(questionarioRepository);
+        BuscarQuestionarioPort buscarQuestionarioPort =
+                new BuscarQuestionarioService(questionarioRepository);
+        AtualizarQuestionarioPort atualizarQuestionarioPort =
+                new AtualizarQuestionarioService(questionarioRepository);
+        RemoverQuestionarioPort removerQuestionarioPort =
+                new RemoverQuestionarioService(questionarioRepository);
+        QuestionarioController questionarioController =
+                new QuestionarioController(
+                        criarQuestionarioPort,
+                        buscarQuestionarioPort,
+                        atualizarQuestionarioPort,
+                        removerQuestionarioPort
+                );
+
+        // Questão
+        CriarQuestaoPort criarQuestaoPort =
+                new CriarQuestaoService(questaoRepository);
+        AtualizarQuestaoPort atualizarQuestaoPort =
+                new AtualizarQuestaoService(questaoRepository);
+        RemoverQuestaoPort removerQuestaoPort =
+                new RemoverQuestaoService(questaoRepository);
+        BuscarQuestaoNoQuestionarioPort buscarQuestaoNoQuestionarioPort =
+                new BuscarQuestaoNoQuestionarioService(questaoRepository);
+        QuestaoController questaoController = new QuestaoController(
+                criarQuestaoPort,
+                atualizarQuestaoPort,
+                removerQuestaoPort,
+                buscarQuestaoNoQuestionarioPort
+        );
+
+        // Resposta
+        CriarRespostaPort criarRespostaPort =
+                new CriarRespostaService(respostaRepository);
+        AtualizarRespostaPort atualizarRespostaPort =
+                new AtualizarRespostaService(respostaRepository);
+        RemoverRespostaPort removerRespostaPort =
+                new RemoverRespostaService(respostaRepository);
+        BuscarRespostaPort buscarRespostaPort =
+                new BuscarRespostaService(respostaRepository);
+        RespostaController respostaController = new RespostaController(
+                criarRespostaPort,
+                atualizarRespostaPort,
+                removerRespostaPort,
+                buscarRespostaPort
         );
 
         // Servidor e rotas
