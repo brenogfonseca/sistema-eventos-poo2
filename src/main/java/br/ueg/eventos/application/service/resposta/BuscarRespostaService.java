@@ -1,7 +1,7 @@
 package br.ueg.eventos.application.service.resposta;
 
 import br.ueg.eventos.application.port.in.resposta.BuscarRespostaPort;
-import br.ueg.eventos.application.port.out.RespostaRepository;
+import br.ueg.eventos.application.port.out.RespostaRepositoryPort;
 import br.ueg.eventos.domain.model.Resposta;
 import java.util.List;
 
