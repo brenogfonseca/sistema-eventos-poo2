@@ -8,9 +8,9 @@ import java.util.Optional;
 
 public class AtualizarRespostaService implements AtualizarRespostaPort {
 
-    private final RespostaRepository respostaRepository;
+    private final RespostaRepositoryPort respostaRepository;
 
-    public AtualizarRespostaService(RespostaRepository respostaRepository) {
+    public AtualizarRespostaService(RespostaRepositoryPort respostaRepository) {
         this.respostaRepository = respostaRepository;
     }
 
