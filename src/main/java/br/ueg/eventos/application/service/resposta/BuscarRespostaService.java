@@ -7,9 +7,9 @@ import java.util.List;
 
 public class BuscarRespostaService implements BuscarRespostaPort {
 
-    private final RespostaRepository respostaRepository;
+    private final RespostaRepositoryPort respostaRepository;
 
-    public BuscarRespostaService(RespostaRepository respostaRepository) {
+    public BuscarRespostaService(RespostaRepositoryPort respostaRepository) {
         this.respostaRepository = respostaRepository;
     }
 
