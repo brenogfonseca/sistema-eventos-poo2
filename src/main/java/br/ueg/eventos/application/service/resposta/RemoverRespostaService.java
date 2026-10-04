@@ -1,7 +1,7 @@
 package br.ueg.eventos.application.service.resposta;
 
 import br.ueg.eventos.application.port.in.resposta.RemoverRespostaPort;
-import br.ueg.eventos.application.port.out.RespostaRepository;
+import br.ueg.eventos.application.port.out.RespostaRepositoryPort;
 
 public class RemoverRespostaService implements RemoverRespostaPort {
 
