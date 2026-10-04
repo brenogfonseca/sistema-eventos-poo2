@@ -5,10 +5,10 @@ import br.ueg.eventos.application.port.out.QuestionarioRepositoryPort;
 
 public class RemoverQuestionarioService implements RemoverQuestionarioPort {
 
-    private final QuestionarioRepository questionarioRepository;
+    private final QuestionarioRepositoryPort questionarioRepository;
 
     // Construtor para injetar a dependência do repositório.
-    public RemoverQuestionarioService(QuestionarioRepository questionarioRepository) {
+    public RemoverQuestionarioService(QuestionarioRepositoryPort questionarioRepository) {
         this.questionarioRepository = questionarioRepository;
     }
 
