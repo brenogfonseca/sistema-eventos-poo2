@@ -6,9 +6,9 @@ import br.ueg.eventos.domain.model.Resposta;
 
 public class CriarRespostaService implements CriarRespostaPort {
 
-    private final RespostaRepository respostaRepository;
+    private final RespostaRepositoryPort respostaRepository;
 
-    public CriarRespostaService(RespostaRepository respostaRepository) {
+    public CriarRespostaService(RespostaRepositoryPort respostaRepository) {
         this.respostaRepository = respostaRepository;
     }
 
