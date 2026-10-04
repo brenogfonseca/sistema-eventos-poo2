@@ -6,9 +6,9 @@ import br.ueg.eventos.domain.model.Questao;
 
 public class CriarQuestaoService implements CriarQuestaoPort {
 
-    private final QuestaoRepository questaoRepository;
+    private final QuestaoRepositoryPort questaoRepository;
 
-    public CriarQuestaoService(QuestaoRepository questaoRepository) {
+    public CriarQuestaoService(QuestaoRepositoryPort questaoRepository) {
         this.questaoRepository = questaoRepository;
     }
 
