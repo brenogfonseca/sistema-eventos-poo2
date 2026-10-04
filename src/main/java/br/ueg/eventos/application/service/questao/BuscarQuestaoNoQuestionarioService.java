@@ -5,9 +5,9 @@ import br.ueg.eventos.application.port.out.QuestaoRepositoryPort;
 import br.ueg.eventos.domain.model.Questao;
 import java.util.List;
 public class BuscarQuestaoNoQuestionarioService implements BuscarQuestaoNoQuestionarioPort {
-    private final QuestaoRepository questaoRepository;
+    private final QuestaoRepositoryPort questaoRepository;
 
-        public BuscarQuestaoNoQuestionarioService(QuestaoRepository questaoRepository) {
+        public BuscarQuestaoNoQuestionarioService(QuestaoRepositoryPort questaoRepository) {
             this.questaoRepository = questaoRepository;
         }
 
