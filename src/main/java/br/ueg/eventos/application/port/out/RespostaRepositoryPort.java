@@ -4,7 +4,7 @@ import br.ueg.eventos.domain.model.Resposta;
 import java.util.List;
 import java.util.Optional;
 
-public interface RespostaRepository {
+public interface RespostaRepositoryPort {
     Resposta salvar(Resposta resposta);
     Optional<Resposta> buscarPorId(Long id);
     // Retorna a lista de respostas vinculadas a uma questão
