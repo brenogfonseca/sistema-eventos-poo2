@@ -137,6 +137,12 @@ public class Main {
                 new Sha256PasswordEncryptor();
         LocalRepositoryPort localRepository =
                 new InMemoryLocalRepository();
+        QuestionarioRepositoryPort questionarioRepository =
+                new InMemoryQuestionarioRepository();
+        QuestaoRepositoryPort questaoRepository =
+                new InMemoryQuestaoRepository();
+        RespostaRepositoryPort respostaRepository =
+                new InMemoryRespostaRepository();
 
         // Evento
         CriarEventoPort criarEventoPort =
@@ -345,6 +351,9 @@ public class Main {
         frequenciaController.registerRoutes(app);
         usuarioController.registerRoutes(app);
         localController.registerRoutes(app);
+        questionarioController.registerRoutes(app);
+        questaoController.registerRoutes(app);
+        respostaController.registerRoutes(app);
 
         app.start(8080);
 
