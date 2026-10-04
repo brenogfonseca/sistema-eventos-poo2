@@ -5,9 +5,9 @@ import br.ueg.eventos.application.port.out.QuestaoRepositoryPort;
 
 public class RemoverQuestaoService implements RemoverQuestaoPort {
 
-    private final QuestaoRepository questaoRepository;
+    private final QuestaoRepositoryPort questaoRepository;
 
-    public RemoverQuestaoService(QuestaoRepository questaoRepository) {
+    public RemoverQuestaoService(QuestaoRepositoryPort questaoRepository) {
         this.questaoRepository = questaoRepository;
     }
 
