@@ -8,9 +8,9 @@ import java.util.Optional;
 
 public class AtualizarQuestaoService implements AtualizarQuestaoPort {
 
-    private final QuestaoRepository questaoRepository;
+    private final QuestaoRepositoryPort questaoRepository;
 
-    public AtualizarQuestaoService(QuestaoRepository questaoRepository) {
+    public AtualizarQuestaoService(QuestaoRepositoryPort questaoRepository) {
         this.questaoRepository = questaoRepository;
     }
 
