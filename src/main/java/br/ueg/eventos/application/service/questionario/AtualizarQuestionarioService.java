@@ -9,10 +9,10 @@ import java.util.Optional;
 
 public class AtualizarQuestionarioService implements AtualizarQuestionarioPort {
 
-    private final QuestionarioRepository questionarioRepository;
+    private final QuestionarioRepositoryPort questionarioRepository;
 
     // Construtor para injetar a dependência do repositório.
-    public AtualizarQuestionarioService(QuestionarioRepository questionarioRepository) {
+    public AtualizarQuestionarioService(QuestionarioRepositoryPort questionarioRepository) {
         this.questionarioRepository = questionarioRepository;
     }
 
