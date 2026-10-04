@@ -91,8 +91,6 @@ import br.ueg.eventos.infrastructure.adapter.in.web.UsuarioController;
 import br.ueg.eventos.infrastructure.adapter.in.web.QuestionarioController;
 import br.ueg.eventos.infrastructure.adapter.in.web.QuestaoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.RespostaController;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryAtividadeRepository;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryEventoRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryFrequenciaRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryInscricaoRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryUsuarioRepository;
@@ -100,6 +98,10 @@ import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryQuestionari
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryQuestaoRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryRespostaRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.Sha256PasswordEncryptor;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteAtividadeRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteConnectionFactory;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteDatabaseInitializer;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteEventoRepository;
 import br.ueg.eventos.application.port.in.local.AlterarLocalPort;
 import br.ueg.eventos.application.port.in.local.BuscarLocalPorIdPort;
 import br.ueg.eventos.application.port.in.local.CadastrarLocalPort;
@@ -122,11 +124,19 @@ public class Main {
                         + "(Hexagonal sem Framework pesado no Core)..."
         );
 
+        SqliteConnectionFactory connectionFactory =
+                new SqliteConnectionFactory();
+        new SqliteDatabaseInitializer(connectionFactory).inicializar();
+
+        System.out.println(
+                "Banco SQLite: " + connectionFactory.getDatabasePath()
+        );
+
         // Repositórios
         EventoRepositoryPort eventoRepository =
-                new InMemoryEventoRepository();
+                new SqliteEventoRepository(connectionFactory);
         AtividadeRepositoryPort atividadeRepository =
-                new InMemoryAtividadeRepository();
+                new SqliteAtividadeRepository(connectionFactory);
         InscricaoRepositoryPort inscricaoRepository =
                 new InMemoryInscricaoRepository();
         FrequenciaRepositoryPort frequenciaRepository =
