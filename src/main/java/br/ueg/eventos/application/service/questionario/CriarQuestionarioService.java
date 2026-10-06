@@ -25,7 +25,8 @@ public class CriarQuestionarioService implements CriarQuestionarioPort {
             throw new RegraNegocioException("Esta atividade já possui um questionário vinculado. Apenas um é permitido.");
         }
 
-        Questionario questionario = new Questionario(comando.idAtividade, comando.titulo);
+        Integer idAtividade = comando.idAtividade != null ? comando.idAtividade.intValue() : null;
+        Questionario questionario = new Questionario(idAtividade, comando.titulo);
 
         return questionarioRepository.salvar(questionario);
     }
