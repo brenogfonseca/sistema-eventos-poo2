@@ -51,7 +51,7 @@ public class EventoController {
             ctx.status(HttpStatus.OK).json(listarEventosPort.executar());
         } catch (Exception e) {
             ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).json(new ErroResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.getStatusCode(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getCode(),
                 "Erro interno",
                 "Erro interno: " + e.getMessage()
             ));

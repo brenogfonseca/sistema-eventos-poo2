@@ -1,0 +1,545 @@
+/* =============================================================================
+   style.css — Sistema de Gestão de Eventos (UEG / POO2)
+   =============================================================================
+   Design limpo e profissional em CSS nativo.
+   Paleta: tons de azul/índigo com cinzas neutros.
+   Sem frameworks externos — apenas CSS organizado por blocos semânticos.
+   ============================================================================= */
+
+/* ── 1. Reset e variáveis de design ─────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    /* Cores principais */
+    --cor-primaria:      #3b5bdb; /* azul índigo */
+    --cor-primaria-esc:  #2f4ac0; /* tom mais escuro para hover */
+    --cor-secundaria:    #f1f3f9; /* fundo geral */
+    --cor-acento:        #4dabf7; /* azul claro para detalhes */
+    --cor-sucesso:       #2f9e44;
+    --cor-erro:          #c92a2a;
+    --cor-aviso:         #e67700;
+
+    /* Texto */
+    --texto-principal:   #1a1a2e;
+    --texto-secundario:  #555e7e;
+    --texto-invertido:   #ffffff;
+
+    /* Superfícies */
+    --fundo-pagina:      #f0f2f8;
+    --fundo-card:        #ffffff;
+    --fundo-nav:         #1e2a5e;
+
+    /* Bordas e sombras */
+    --borda:             #d1d8ef;
+    --sombra-suave:      0 2px 8px rgba(59, 91, 219, 0.10);
+    --sombra-media:      0 4px 18px rgba(59, 91, 219, 0.16);
+
+    /* Espaçamentos */
+    --espaco-xs:   0.4rem;
+    --espaco-sm:   0.75rem;
+    --espaco-md:   1.25rem;
+    --espaco-lg:   2rem;
+    --espaco-xl:   3rem;
+
+    /* Tipografia */
+    --fonte:        'Segoe UI', system-ui, -apple-system, sans-serif;
+    --raio-borda:   10px;
+    --raio-botao:   6px;
+}
+
+/* ── 2. Base global ──────────────────────────────────────────────────────────── */
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--fonte);
+    background-color: var(--fundo-pagina);
+    color: var(--texto-principal);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+a {
+    color: var(--cor-primaria);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+img {
+    max-width: 100%;
+}
+
+/* ── 3. Barra de navegação ───────────────────────────────────────────────────── */
+.navbar {
+    background-color: var(--fundo-nav);
+    color: var(--texto-invertido);
+    padding: var(--espaco-sm) var(--espaco-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-marca {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--texto-invertido);
+}
+
+.navbar-marca span {
+    color: var(--cor-acento);
+}
+
+.navbar-links {
+    display: flex;
+    gap: var(--espaco-md);
+    list-style: none;
+}
+
+.navbar-links a {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.93rem;
+    padding: var(--espaco-xs) var(--espaco-sm);
+    border-radius: var(--raio-botao);
+    transition: background 0.18s, color 0.18s;
+}
+
+.navbar-links a:hover,
+.navbar-links a.ativo {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: var(--texto-invertido);
+    text-decoration: none;
+}
+
+.navbar-usuario {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-sm);
+}
+
+.navbar-usuario strong {
+    color: var(--cor-acento);
+}
+
+/* ── 4. Layout principal ─────────────────────────────────────────────────────── */
+.container {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 var(--espaco-md);
+}
+
+.conteudo-principal {
+    flex: 1;
+    padding: var(--espaco-lg) var(--espaco-md);
+}
+
+/* ── 5. Cards ────────────────────────────────────────────────────────────────── */
+.card {
+    background-color: var(--fundo-card);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-borda);
+    padding: var(--espaco-lg);
+    box-shadow: var(--sombra-suave);
+}
+
+.card-titulo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--texto-principal);
+    margin-bottom: var(--espaco-md);
+    padding-bottom: var(--espaco-sm);
+    border-bottom: 2px solid var(--cor-primaria);
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-sm);
+}
+
+/* ── 6. Formulários ──────────────────────────────────────────────────────────── */
+.form-grupo {
+    margin-bottom: var(--espaco-md);
+}
+
+.form-grupo label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--texto-secundario);
+    margin-bottom: var(--espaco-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-grupo input,
+.form-grupo select,
+.form-grupo textarea {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    border: 1.5px solid var(--borda);
+    border-radius: var(--raio-botao);
+    font-family: var(--fonte);
+    font-size: 0.95rem;
+    color: var(--texto-principal);
+    background-color: #fff;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    outline: none;
+}
+
+.form-grupo input:focus,
+.form-grupo select:focus,
+.form-grupo textarea:focus {
+    border-color: var(--cor-primaria);
+    box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.15);
+}
+
+.form-grupo textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+.form-linha {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--espaco-md);
+}
+
+.form-linha-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--espaco-md);
+}
+
+/* ── 7. Botões ───────────────────────────────────────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.2rem;
+    border: none;
+    border-radius: var(--raio-botao);
+    font-family: var(--fonte);
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.18s, transform 0.1s, box-shadow 0.18s;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn-primario {
+    background-color: var(--cor-primaria);
+    color: var(--texto-invertido);
+}
+
+.btn-primario:hover {
+    background-color: var(--cor-primaria-esc);
+    box-shadow: var(--sombra-suave);
+    text-decoration: none;
+    color: var(--texto-invertido);
+}
+
+.btn-secundario {
+    background-color: #e9ecf5;
+    color: var(--texto-principal);
+}
+
+.btn-secundario:hover {
+    background-color: #d8ddf0;
+    text-decoration: none;
+}
+
+.btn-perigo {
+    background-color: var(--cor-erro);
+    color: var(--texto-invertido);
+}
+
+.btn-perigo:hover {
+    background-color: #a82323;
+    text-decoration: none;
+    color: var(--texto-invertido);
+}
+
+.btn-sucesso {
+    background-color: var(--cor-sucesso);
+    color: var(--texto-invertido);
+}
+
+.btn-sucesso:hover {
+    background-color: #267a37;
+    text-decoration: none;
+    color: var(--texto-invertido);
+}
+
+.btn-bloco {
+    display: flex;
+    width: 100%;
+}
+
+/* ── 8. Alertas (mensagens de feedback) ─────────────────────────────────────── */
+.alerta {
+    padding: var(--espaco-sm) var(--espaco-md);
+    border-radius: var(--raio-botao);
+    font-size: 0.92rem;
+    font-weight: 500;
+    margin-bottom: var(--espaco-md);
+    border-left: 4px solid transparent;
+}
+
+.alerta-erro {
+    background-color: #fff5f5;
+    border-color: var(--cor-erro);
+    color: var(--cor-erro);
+}
+
+.alerta-sucesso {
+    background-color: #f0fff4;
+    border-color: var(--cor-sucesso);
+    color: var(--cor-sucesso);
+}
+
+.alerta-info {
+    background-color: #f0f4ff;
+    border-color: var(--cor-primaria);
+    color: var(--cor-primaria);
+}
+
+/* ── 9. Tabelas ──────────────────────────────────────────────────────────────── */
+.tabela-responsiva {
+    overflow-x: auto;
+}
+
+.tabela {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.93rem;
+}
+
+.tabela thead th {
+    background-color: var(--fundo-nav);
+    color: var(--texto-invertido);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.82rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.tabela tbody tr {
+    border-bottom: 1px solid var(--borda);
+    transition: background 0.13s;
+}
+
+.tabela tbody tr:hover {
+    background-color: #f4f6fd;
+}
+
+.tabela tbody td {
+    padding: 0.7rem 1rem;
+    color: var(--texto-principal);
+    vertical-align: middle;
+}
+
+.tabela tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* ── 10. Badges / etiquetas de perfil/status ─────────────────────────────────── */
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.badge-admin      { background: #e3f0ff; color: #1864ab; }
+.badge-usuario    { background: #e6fcf5; color: #0b7a45; }
+.badge-visitante  { background: #fff4e6; color: #c76a00; }
+.badge-ativo      { background: #e6fcf5; color: #0b7a45; }
+.badge-cancelado  { background: #fff5f5; color: #c92a2a; }
+
+/* ── 11. Página de Login/Cadastro (layout centralizado) ─────────────────────── */
+.pagina-auth {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e2a5e 0%, #3b5bdb 100%);
+    padding: var(--espaco-lg);
+}
+
+.card-auth {
+    background: var(--fundo-card);
+    border-radius: 14px;
+    padding: var(--espaco-xl);
+    box-shadow: var(--sombra-media);
+    width: 100%;
+    max-width: 440px;
+}
+
+.card-auth .logo-auth {
+    text-align: center;
+    margin-bottom: var(--espaco-lg);
+}
+
+.card-auth .logo-auth h1 {
+    font-size: 1.5rem;
+    color: var(--cor-primaria);
+    font-weight: 800;
+}
+
+.card-auth .logo-auth p {
+    font-size: 0.88rem;
+    color: var(--texto-secundario);
+    margin-top: var(--espaco-xs);
+}
+
+.separador-auth {
+    text-align: center;
+    margin: var(--espaco-md) 0;
+    font-size: 0.88rem;
+    color: var(--texto-secundario);
+}
+
+/* ── 12. Grid de eventos (listagem em cards) ─────────────────────────────────── */
+.grid-eventos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--espaco-md);
+    margin-top: var(--espaco-md);
+}
+
+.card-evento {
+    background: var(--fundo-card);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-borda);
+    padding: var(--espaco-md);
+    box-shadow: var(--sombra-suave);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-sm);
+    transition: box-shadow 0.18s, transform 0.18s;
+}
+
+.card-evento:hover {
+    box-shadow: var(--sombra-media);
+    transform: translateY(-2px);
+}
+
+.card-evento h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cor-primaria);
+}
+
+.card-evento .evento-meta {
+    font-size: 0.83rem;
+    color: var(--texto-secundario);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espaco-sm);
+}
+
+.card-evento .evento-descricao {
+    font-size: 0.91rem;
+    color: var(--texto-secundario);
+    flex: 1;
+}
+
+.card-evento .card-evento-acoes {
+    margin-top: auto;
+    display: flex;
+    gap: var(--espaco-xs);
+}
+
+/* ── 13. Cabeçalho de seção ──────────────────────────────────────────────────── */
+.secao-cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--espaco-md);
+    flex-wrap: wrap;
+    gap: var(--espaco-sm);
+}
+
+.secao-titulo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--texto-principal);
+}
+
+.secao-subtitulo {
+    font-size: 0.92rem;
+    color: var(--texto-secundario);
+    margin-top: 0.2rem;
+}
+
+/* ── 14. Rodapé ──────────────────────────────────────────────────────────────── */
+.rodape {
+    background-color: var(--fundo-nav);
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    padding: var(--espaco-md);
+    font-size: 0.82rem;
+    margin-top: auto;
+}
+
+/* ── 15. Utilitários ─────────────────────────────────────────────────────────── */
+.mt-sm  { margin-top: var(--espaco-sm); }
+.mt-md  { margin-top: var(--espaco-md); }
+.mt-lg  { margin-top: var(--espaco-lg); }
+.mb-md  { margin-bottom: var(--espaco-md); }
+.text-center { text-align: center; }
+.text-muted  { color: var(--texto-secundario); font-size: 0.88rem; }
+.d-flex      { display: flex; }
+.gap-sm      { gap: var(--espaco-sm); }
+.flex-wrap   { flex-wrap: wrap; }
+.align-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+
+/* ── 16. Responsividade ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .form-linha,
+    .form-linha-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .navbar {
+        flex-direction: column;
+        gap: var(--espaco-sm);
+        padding: var(--espaco-sm);
+    }
+
+    .navbar-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .secao-cabecalho {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

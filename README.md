@@ -14,21 +14,68 @@ Antes de rodar a primeira vez (ou sempre que fizer alterações estruturais), li
 mvn clean compile
 ```
 
-### 2. Executar a Aplicação
-O projeto usa o plugin `exec` do Maven para rodar a classe `Main` diretamente pelo terminal. Para subir o servidor na porta 8080, rode:
+### 2. Executar a Aplicação (Back-end)
+O projeto usa o micro-framework Javalin e o plugin `exec` do Maven para rodar a classe `Main` diretamente pelo terminal. Para subir a API REST na porta 8080, execute:
 ```bash
-mvn exec:java -Dexec.mainClass="br.ueg.eventos.Main"
+mvn compile exec:java -Dexec.mainClass="br.ueg.eventos.Main"
 ```
-*(Se você estiver usando uma IDE como IntelliJ, VSCode ou Eclipse, basta abrir a classe `Main.java` e clicar no botão de "Play"/Run).*
+*(Ou se preferir, abra a classe `Main.java` na sua IDE e execute).*
 
 ---
 
-## 🛠️ Como testar as Rotas da API
+## 💻 Como rodar o Front-end (PHP)
 
-Com a aplicação rodando no seu terminal, abra **outra aba do terminal** (ou use softwares como Postman/Insomnia) e execute os comandos cURL abaixo.
+O front-end do projeto é construído em **PHP nativo**, **HTML5** e **CSS3** (localizado na pasta `/frontend`). Ele consome a API REST Java em `http://localhost:8080`.
+
+### Pré-requisitos do Front
+* PHP 8.0+ instalado na máquina (com extensões `curl` e `json` habilitadas).
+
+### 1. Iniciar o servidor embutido do PHP
+Em um novo terminal, entre na pasta do front-end e inicie o servidor na porta 3000:
+```bash
+cd frontend
+php -S localhost:3000
+```
+
+### 2. Acessar no Navegador
+Abra seu navegador e acesse:
+```
+http://localhost:3000
+```
+
+---
+
+## ⚡ Inicialização Rápida (Script Windows)
+
+Para facilitar, você pode iniciar tanto o back-end quanto o front-end simultaneamente com apenas dois cliques no arquivo:
+```
+iniciar_sistema.bat
+```
+Esse script abre automaticamente a API Java na porta 8080, o servidor PHP na porta 3000 e abre a página no navegador.
+
+---
+
+## 👤 Usuário Administrador Inicial (Para Testes)
+
+Para testes imediatos e navegação com privilégios de administrador sem precisar cadastrar e promover manualmente, o sistema já inicia com um usuário administrador pré-carregado em memória:
+
+| Campo | Valor de Teste |
+|---|---|
+| **Nome** | Administrador |
+| **E-mail** | `admin@evento.com` |
+| **Senha** | `Admin@123` |
+| **Perfil** | `ADMINISTRADOR` |
+| **ID** | `1` |
+
+> ℹ️ **Nota:** Esse usuário foi configurado provisoriamente em `InMemoryUsuarioRepository.java` apenas para testes em ambiente de desenvolvimento.
+
+---
+
+## 🛠️ Como testar as Rotas da API via Terminal (cURL)
+
+Com a aplicação Java rodando, você também pode testar os endpoints diretamente via terminal:
 
 ### Criar um novo Evento (POST)
-Cria um novo evento no sistema.
 ```bash
 curl -X POST http://localhost:8080/eventos \
      -H "Content-Type: application/json" \
@@ -40,11 +87,10 @@ curl -X POST http://localhost:8080/eventos \
            "capacidade": 200
          }'
 ```
-> **Retorno Esperado:** Status `201 CREATED` com o JSON completo contendo o ID gerado para o evento.
+> **Retorno Esperado:** Status `201 CREATED` com o JSON do evento criado.
 
 ### Listar todos os Eventos (GET)
-Retorna todos os eventos que foram salvos em memória.
 ```bash
 curl http://localhost:8080/eventos
 ```
-> **Retorno Esperado:** Status `200 OK` com a lista JSON de eventos criados. Como a persistência atual é em memória, reiniciar a aplicação apagará a lista.
+> **Retorno Esperado:** Status `200 OK` com a lista JSON de eventos. Como a persistência atual é em memória, reiniciar a aplicação reiniciará os dados.

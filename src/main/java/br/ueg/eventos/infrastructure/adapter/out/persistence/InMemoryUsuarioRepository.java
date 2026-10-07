@@ -20,6 +20,26 @@ public class InMemoryUsuarioRepository implements UsuarioRepositoryPort {
     private final Map<Integer, Usuario> usuarios = new ConcurrentHashMap<>();
     private final AtomicInteger idGenerator = new AtomicInteger(1);
 
+    // =========================================================================
+    // USUÁRIO ADMINISTRADOR PARA TESTES
+    // NOTA: Este bloco foi inserido apenas para testes locais de desenvolvimento.
+    // Futuramente este bloco deve ser removido quando houver banco de dados persistente.
+    // =========================================================================
+    public InMemoryUsuarioRepository() {
+        Integer adminId = idGenerator.getAndIncrement();
+        // Senha inicial de teste: "Admin@123" -> Hash SHA-256
+        String hashAdmin = new Sha256PasswordEncryptor().criptografar("Admin@123");
+        Usuario admin = new Usuario(
+                adminId,
+                "Administrador",
+                "admin@evento.com",
+                hashAdmin,
+                br.ueg.eventos.domain.model.Perfil.ADMINISTRADOR
+        );
+        usuarios.put(adminId, admin);
+    }
+    // =========================================================================
+
     @Override
     public Usuario salvar(Usuario usuario) {
         if (usuario.getId() == null) {

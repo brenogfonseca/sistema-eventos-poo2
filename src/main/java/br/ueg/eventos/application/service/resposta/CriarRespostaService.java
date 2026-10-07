@@ -14,8 +14,8 @@ public class CriarRespostaService implements CriarRespostaPort {
 
     @Override
     public Resposta executar(ComandoCriarResposta comando) {
-        // Cria a entidade validando as regras de negócio no construtor
-        Resposta resposta = new Resposta(comando.idQuestao, comando.idUsuario, comando.valor);
+        Integer idQuestao = comando.idQuestao != null ? comando.idQuestao.intValue() : null;
+        Resposta resposta = new Resposta(idQuestao, comando.idUsuario, comando.valor);
         return respostaRepository.salvar(resposta);
     }
 }
