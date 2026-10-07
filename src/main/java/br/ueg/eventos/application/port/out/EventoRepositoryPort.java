@@ -8,4 +8,6 @@ public interface EventoRepositoryPort {
     Evento salvar(Evento evento);
     Optional<Evento> buscarPorId(Long id);
     List<Evento> listarTodos();
+    void deletar(Long id);
 }
+

@@ -53,13 +53,13 @@ $titulo      = $titulo ?? 'Sistema de Eventos';
                     Minhas Inscrições
                 </a>
             </li>
+            <li>
+                <a href="criar_evento.php"
+                   class="<?= $paginaAtiva === 'criar_evento' ? 'ativo' : '' ?>">
+                    + Criar Evento
+                </a>
+            </li>
             <?php if (eh_administrador()): ?>
-                <li>
-                    <a href="criar_evento.php"
-                       class="<?= $paginaAtiva === 'criar_evento' ? 'ativo' : '' ?>">
-                        + Criar Evento
-                    </a>
-                </li>
                 <li>
                     <a href="usuarios.php"
                        class="<?= $paginaAtiva === 'usuarios' ? 'ativo' : '' ?>">
@@ -67,6 +67,7 @@ $titulo      = $titulo ?? 'Sistema de Eventos';
                     </a>
                 </li>
             <?php endif; ?>
+
         <?php endif; ?>
     </ul>
 
