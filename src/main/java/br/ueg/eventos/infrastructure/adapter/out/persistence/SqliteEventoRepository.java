@@ -124,6 +124,28 @@ public class SqliteEventoRepository implements EventoRepositoryPort {
         }
     }
 
+    @Override
+    public void deletar(Long id) {
+        if (id == null || id <= 0) {
+            return;
+        }
+
+        String sql = "UPDATE eventos SET deletado = 1 WHERE id = ?";
+
+        try (Connection connection = connectionFactory.abrirConexao();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setLong(1, id);
+            statement.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao deletar evento no SQLite.",
+                    e
+            );
+        }
+    }
+
     private Evento inserir(
             Connection connection,
             Evento evento) throws SQLException {

@@ -21,14 +21,11 @@
 require_once __DIR__ . '/api_service.php';
 exigir_login(); // Redireciona para login.php se não estiver logado
 
-// Apenas administradores podem criar eventos
-if (!eh_administrador()) {
-    header('Location: eventos.php');
-    exit;
-}
-
+// REGRA DE NEGÓCIO: Qualquer usuário logado pode criar/organizar um evento.
+// Ao ser criado, o usuário logado torna-se automaticamente o organizador criador.
 $erro    = '';
 $sucesso = '';
+
 
 // ── Processa o formulário quando enviado via POST ─────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -55,18 +52,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $inicioISO = $dataInicio . 'T' . ($horaInicio ?: '00:00') . ':00';
         $fimISO    = $dataFim    . 'T' . ($horaFim    ?: '23:59') . ':00';
 
-        // 4. Monta o array de dados — exatamente o que CriarEventoRequest.java espera
+        // 4. Monta o array de dados — inclui o usuário executor logado para registrar o vínculo de criador
         $dados = [
-            'titulo'     => $titulo,
-            'descricao'  => $descricao,
-            'inicio'     => $inicioISO,   // "2026-10-01T08:00:00"
-            'fim'        => $fimISO,       // "2026-10-03T18:00:00"
-            'capacidade' => $capacidade,
+            'titulo'             => $titulo,
+            'descricao'          => $descricao,
+            'inicio'             => $inicioISO,   // "2026-10-01T08:00:00"
+            'fim'                => $fimISO,      // "2026-10-03T18:00:00"
+            'capacidade'         => $capacidade,
+            'usuarioExecutorId'  => id_usuario_logado(), // ID do organizador/criador
         ];
 
-        // 5. Dispara a requisição: POST /eventos
-        //    O PHP converte $dados para JSON e o cURL envia ao servidor Java
-        $resultado = chamar_api('POST', '/eventos', $dados);
+        // 5. Dispara a requisição: POST /eventos passando headers autenticados
+        $resultado = chamar_api('POST', '/eventos', $dados, headers_autenticados());
 
         if ($resultado['erro']) {
             $erro = $resultado['msg_erro'] ?: 'Erro ao criar evento. Verifique os dados.';

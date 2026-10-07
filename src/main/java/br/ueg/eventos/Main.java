@@ -5,8 +5,18 @@ import br.ueg.eventos.application.port.in.atividade.BuscarAtividadePorIdPort;
 import br.ueg.eventos.application.port.in.atividade.CadastrarAtividadePort;
 import br.ueg.eventos.application.port.in.atividade.ExcluirAtividadePort;
 import br.ueg.eventos.application.port.in.atividade.ListarAtividadesPorEventoPort;
+import br.ueg.eventos.application.port.in.evento.AlterarEventoPort;
+import br.ueg.eventos.application.port.in.evento.BuscarEventoPorIdPort;
+import br.ueg.eventos.application.port.in.evento.BuscarVinculoOrganizadorPort;
 import br.ueg.eventos.application.port.in.evento.CriarEventoPort;
+import br.ueg.eventos.application.port.in.evento.ExcluirEventoPort;
 import br.ueg.eventos.application.port.in.evento.ListarEventosPort;
+import br.ueg.eventos.application.port.out.VinculoOrganizadorRepositoryPort;
+import br.ueg.eventos.application.service.evento.AlterarEventoService;
+import br.ueg.eventos.application.service.evento.BuscarEventoPorIdService;
+import br.ueg.eventos.application.service.evento.BuscarVinculoOrganizadorService;
+import br.ueg.eventos.application.service.evento.ExcluirEventoService;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryVinculoOrganizadorRepository;
 import br.ueg.eventos.application.port.in.frequencia.AtualizarPresencaPort;
 import br.ueg.eventos.application.port.in.frequencia.BuscarFrequenciaPorIdPort;
 import br.ueg.eventos.application.port.in.frequencia.ListarFrequenciasPorInscricaoPort;
@@ -153,14 +163,33 @@ public class Main {
                 new InMemoryQuestaoRepository();
         RespostaRepositoryPort respostaRepository =
                 new InMemoryRespostaRepository();
+        VinculoOrganizadorRepositoryPort vinculoOrganizadorRepository =
+                new InMemoryVinculoOrganizadorRepository();
 
         // Evento
         CriarEventoPort criarEventoPort =
-                new CriarEventoService(eventoRepository);
+                new CriarEventoService(eventoRepository, vinculoOrganizadorRepository);
         ListarEventosPort listarEventosPort =
                 new ListarEventosService(eventoRepository);
+        AlterarEventoPort alterarEventoPort =
+                new AlterarEventoService(eventoRepository, vinculoOrganizadorRepository);
+        ExcluirEventoPort excluirEventoPort =
+                new ExcluirEventoService(eventoRepository, vinculoOrganizadorRepository);
+        BuscarEventoPorIdPort buscarEventoPorIdPort =
+                new BuscarEventoPorIdService(eventoRepository);
+        BuscarVinculoOrganizadorPort buscarVinculoOrganizadorPort =
+                new BuscarVinculoOrganizadorService(vinculoOrganizadorRepository);
+
         EventoController eventoController =
-                new EventoController(criarEventoPort, listarEventosPort);
+                new EventoController(
+                        criarEventoPort,
+                        listarEventosPort,
+                        alterarEventoPort,
+                        excluirEventoPort,
+                        buscarEventoPorIdPort,
+                        buscarVinculoOrganizadorPort,
+                        usuarioRepository
+                );
 
         // Atividade
         CadastrarAtividadePort cadastrarAtividadePort =

@@ -69,7 +69,15 @@ public class Evento {
         this.capacidadeMaxima = capacidadeMaxima;
     }
 
-    // Comportamentos do domínio (encapsulamento de mudanças de estado)
+    // =========================================================================
+    // COMPORTAMENTOS DO DOMÍNIO (ENCAPSULAMENTO E PROTEÇÃO DE INVARIANTES)
+    // =========================================================================
+    // NOTA DIDÁTICA SOBRE O DESIGN DO DOMÍNIO:
+    // Em vez de expor "setters" públicos soltos (ex: setTitulo, setPeriodo),
+    // o domínio expõe métodos de intenção de negócio. Isso impede que a entidade
+    // fique em estado inconsistente ou inválido no meio da execução.
+    // =========================================================================
+
     public void abrirInscricoes() {
         this.inscricoesAbertas = true;
     }
@@ -87,9 +95,40 @@ public class Evento {
         this.certificado = false;
     }
     
+    /**
+     * Atualização integral dos dados cadastrais do evento.
+     * 
+     * MOTIVO / POR QUE FOI ADICIONADO:
+     * Para atender ao caso de uso de alteração de eventos (AlterarEventoService) sem quebrar o
+     * encapsulamento nem expor setters públicos soltos. Todas as propriedades passam
+     * obrigatoriamente pelas validações de invariantes privadas (setTitulo, setDescricao,
+     * setPeriodo, setCapacidadeMaxima).
+     * 
+     * POR QUE NÃO COLOCAMOS O 'usuarioExecutor' AQUI DENTRO DO EVENTO?
+     * Pelo princípio de Responsabilidade Única (SRP) e baixo acoplamento: a entidade Evento
+     * não conhece quem é seu organizador nem a lista de usuários do sistema. Essa amarração
+     * de segurança é delegada à classe associativa 'VinculoOrganizador' e orquestrada na camada
+     * de aplicação (AlterarEventoService).
+     */
+    public void atualizarDados(String titulo, String descricao, Periodo periodo, int capacidadeMaxima) {
+        setTitulo(titulo);
+        setDescricao(descricao);
+        setPeriodo(periodo);
+        setCapacidadeMaxima(capacidadeMaxima);
+    }
+
+    /**
+     * Marca o evento como deletado (exclusão lógica).
+     * 
+     * MOTIVO / POR QUE UTILIZAMOS EXCLUSÃO LÓGICA (SOFT DELETE):
+     * Em sistemas corporativos com histórico, não removemos fisicamente a linha do evento
+     * imediatamente porque ele pode ter inscrições, questionários ou frequências já emitidas.
+     * Este método apenas altera o invariante interno do evento para 'deletado = true'.
+     */
     public void deletar() {
         this.deletado = true;
     }
+
 
     // Getters
     public Long getId() {
