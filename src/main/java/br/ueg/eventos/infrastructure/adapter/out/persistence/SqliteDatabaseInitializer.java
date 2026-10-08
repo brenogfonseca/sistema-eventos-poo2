@@ -9,12 +9,22 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class SqliteDatabaseInitializer {
 
-    private static final int VERSAO_INICIAL = 1;
-    private static final String ARQUIVO_MIGRACAO =
-            "/db/migration/V1__criar_tabelas.sql";
+    private static final List<Migracao> MIGRACOES = List.of(
+            new Migracao(
+                    1,
+                    "Criacao inicial de eventos e atividades",
+                    "/db/migration/V1__criar_tabelas.sql"
+            ),
+            new Migracao(
+                    2,
+                    "Criacao das demais tabelas do sistema",
+                    "/db/migration/V2__criar_tabelas_restantes.sql"
+            )
+    );
 
     private final SqliteConnectionFactory connectionFactory;
 
@@ -29,24 +39,10 @@ public class SqliteDatabaseInitializer {
 
             criarTabelaDeMigracoes(connection);
 
-            if (migracaoJaAplicada(connection, VERSAO_INICIAL)) {
-                return;
-            }
-
-            String sqlMigracao = lerMigracao();
-            connection.setAutoCommit(false);
-
-            try {
-                executarComandos(connection, sqlMigracao);
-                registrarMigracao(connection);
-                connection.commit();
-            } catch (SQLException e) {
-                try {
-                    connection.rollback();
-                } catch (SQLException erroRollback) {
-                    e.addSuppressed(erroRollback);
+            for (Migracao migracao : MIGRACOES) {
+                if (!migracaoJaAplicada(connection, migracao.versao())) {
+                    aplicarMigracao(connection, migracao);
                 }
-                throw e;
             }
 
         } catch (SQLException | IOException e) {
@@ -93,14 +89,36 @@ public class SqliteDatabaseInitializer {
         }
     }
 
-    private String lerMigracao() throws IOException {
+    private void aplicarMigracao(
+            Connection connection,
+            Migracao migracao) throws SQLException, IOException {
+        String sqlMigracao = lerMigracao(migracao.arquivo());
+        connection.setAutoCommit(false);
+
+        try {
+            executarComandos(connection, sqlMigracao);
+            registrarMigracao(connection, migracao);
+            connection.commit();
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException erroRollback) {
+                e.addSuppressed(erroRollback);
+            }
+            throw e;
+        } finally {
+            connection.setAutoCommit(true);
+        }
+    }
+
+    private String lerMigracao(String arquivo) throws IOException {
         try (InputStream inputStream =
-                     getClass().getResourceAsStream(ARQUIVO_MIGRACAO)) {
+                     getClass().getResourceAsStream(arquivo)) {
 
             if (inputStream == null) {
                 throw new IOException(
                         "Arquivo de migração não encontrado: "
-                                + ARQUIVO_MIGRACAO
+                                + arquivo
                 );
             }
 
@@ -127,7 +145,8 @@ public class SqliteDatabaseInitializer {
     }
 
     private void registrarMigracao(
-            Connection connection) throws SQLException {
+            Connection connection,
+            Migracao migracao) throws SQLException {
 
         String sql = """
                 INSERT INTO schema_migrations (
@@ -139,13 +158,13 @@ public class SqliteDatabaseInitializer {
 
         try (PreparedStatement statement =
                      connection.prepareStatement(sql)) {
-            statement.setInt(1, VERSAO_INICIAL);
-            statement.setString(
-                    2,
-                    "Criacao inicial de eventos e atividades"
-            );
+            statement.setInt(1, migracao.versao());
+            statement.setString(2, migracao.descricao());
             statement.setString(3, LocalDateTime.now().toString());
             statement.executeUpdate();
         }
+    }
+
+    private record Migracao(int versao, String descricao, String arquivo) {
     }
 }

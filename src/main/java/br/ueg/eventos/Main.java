@@ -17,6 +17,23 @@ import br.ueg.eventos.application.port.in.inscricao.InscreverUsuarioPort;
 import br.ueg.eventos.application.port.in.inscricao.ListarInscricoesPorAtividadePort;
 import br.ueg.eventos.application.port.in.inscricao.ListarInscricoesPorUsuarioPort;
 import br.ueg.eventos.application.port.in.inscricao.ReativarInscricaoPort;
+import br.ueg.eventos.application.port.in.local.AlterarLocalPort;
+import br.ueg.eventos.application.port.in.local.BuscarLocalPorIdPort;
+import br.ueg.eventos.application.port.in.local.CadastrarLocalPort;
+import br.ueg.eventos.application.port.in.local.DeletarLocalPort;
+import br.ueg.eventos.application.port.in.local.ListarLocaisPort;
+import br.ueg.eventos.application.port.in.questao.AtualizarQuestaoPort;
+import br.ueg.eventos.application.port.in.questao.BuscarQuestaoNoQuestionarioPort;
+import br.ueg.eventos.application.port.in.questao.CriarQuestaoPort;
+import br.ueg.eventos.application.port.in.questao.RemoverQuestaoPort;
+import br.ueg.eventos.application.port.in.questionario.AtualizarQuestionarioPort;
+import br.ueg.eventos.application.port.in.questionario.BuscarQuestionarioPort;
+import br.ueg.eventos.application.port.in.questionario.CriarQuestionarioPort;
+import br.ueg.eventos.application.port.in.questionario.RemoverQuestionarioPort;
+import br.ueg.eventos.application.port.in.resposta.AtualizarRespostaPort;
+import br.ueg.eventos.application.port.in.resposta.BuscarRespostaPort;
+import br.ueg.eventos.application.port.in.resposta.CriarRespostaPort;
+import br.ueg.eventos.application.port.in.resposta.RemoverRespostaPort;
 import br.ueg.eventos.application.port.in.usuario.AlterarDadosUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.AlterarPerfilUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.AlterarSenhaUsuarioPort;
@@ -25,25 +42,14 @@ import br.ueg.eventos.application.port.in.usuario.BuscarUsuarioPorIdPort;
 import br.ueg.eventos.application.port.in.usuario.CadastrarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.DeletarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.ListarUsuariosPort;
-import br.ueg.eventos.application.port.in.questionario.AtualizarQuestionarioPort;
-import br.ueg.eventos.application.port.in.questionario.BuscarQuestionarioPort;
-import br.ueg.eventos.application.port.in.questionario.CriarQuestionarioPort;
-import br.ueg.eventos.application.port.in.questionario.RemoverQuestionarioPort;
-import br.ueg.eventos.application.port.in.questao.AtualizarQuestaoPort;
-import br.ueg.eventos.application.port.in.questao.BuscarQuestaoNoQuestionarioPort;
-import br.ueg.eventos.application.port.in.questao.CriarQuestaoPort;
-import br.ueg.eventos.application.port.in.questao.RemoverQuestaoPort;
-import br.ueg.eventos.application.port.in.resposta.AtualizarRespostaPort;
-import br.ueg.eventos.application.port.in.resposta.BuscarRespostaPort;
-import br.ueg.eventos.application.port.in.resposta.CriarRespostaPort;
-import br.ueg.eventos.application.port.in.resposta.RemoverRespostaPort;
 import br.ueg.eventos.application.port.out.AtividadeRepositoryPort;
 import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.application.port.out.FrequenciaRepositoryPort;
 import br.ueg.eventos.application.port.out.InscricaoRepositoryPort;
+import br.ueg.eventos.application.port.out.LocalRepositoryPort;
 import br.ueg.eventos.application.port.out.PasswordEncryptor;
-import br.ueg.eventos.application.port.out.QuestionarioRepositoryPort;
 import br.ueg.eventos.application.port.out.QuestaoRepositoryPort;
+import br.ueg.eventos.application.port.out.QuestionarioRepositoryPort;
 import br.ueg.eventos.application.port.out.RespostaRepositoryPort;
 import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.application.service.atividade.AtualizarAtividadeService;
@@ -63,6 +69,23 @@ import br.ueg.eventos.application.service.inscricao.InscreverUsuarioService;
 import br.ueg.eventos.application.service.inscricao.ListarInscricoesPorAtividadeService;
 import br.ueg.eventos.application.service.inscricao.ListarInscricoesPorUsuarioService;
 import br.ueg.eventos.application.service.inscricao.ReativarInscricaoService;
+import br.ueg.eventos.application.service.local.AlterarLocalService;
+import br.ueg.eventos.application.service.local.BuscarLocalPorIdService;
+import br.ueg.eventos.application.service.local.CadastrarLocalService;
+import br.ueg.eventos.application.service.local.DeletarLocalService;
+import br.ueg.eventos.application.service.local.ListarLocaisService;
+import br.ueg.eventos.application.service.questao.AtualizarQuestaoService;
+import br.ueg.eventos.application.service.questao.BuscarQuestaoNoQuestionarioService;
+import br.ueg.eventos.application.service.questao.CriarQuestaoService;
+import br.ueg.eventos.application.service.questao.RemoverQuestaoService;
+import br.ueg.eventos.application.service.questionario.AtualizarQuestionarioService;
+import br.ueg.eventos.application.service.questionario.BuscarQuestionarioService;
+import br.ueg.eventos.application.service.questionario.CriarQuestionarioService;
+import br.ueg.eventos.application.service.questionario.RemoverQuestionarioService;
+import br.ueg.eventos.application.service.resposta.AtualizarRespostaService;
+import br.ueg.eventos.application.service.resposta.BuscarRespostaService;
+import br.ueg.eventos.application.service.resposta.CriarRespostaService;
+import br.ueg.eventos.application.service.resposta.RemoverRespostaService;
 import br.ueg.eventos.application.service.usuario.AlterarDadosUsuarioService;
 import br.ueg.eventos.application.service.usuario.AlterarPerfilUsuarioService;
 import br.ueg.eventos.application.service.usuario.AlterarSenhaUsuarioService;
@@ -71,50 +94,27 @@ import br.ueg.eventos.application.service.usuario.BuscarUsuarioPorIdService;
 import br.ueg.eventos.application.service.usuario.CadastrarUsuarioService;
 import br.ueg.eventos.application.service.usuario.DeletarUsuarioService;
 import br.ueg.eventos.application.service.usuario.ListarUsuariosService;
-import br.ueg.eventos.application.service.questionario.AtualizarQuestionarioService;
-import br.ueg.eventos.application.service.questionario.BuscarQuestionarioService;
-import br.ueg.eventos.application.service.questionario.CriarQuestionarioService;
-import br.ueg.eventos.application.service.questionario.RemoverQuestionarioService;
-import br.ueg.eventos.application.service.questao.AtualizarQuestaoService;
-import br.ueg.eventos.application.service.questao.BuscarQuestaoNoQuestionarioService;
-import br.ueg.eventos.application.service.questao.CriarQuestaoService;
-import br.ueg.eventos.application.service.questao.RemoverQuestaoService;
-import br.ueg.eventos.application.service.resposta.AtualizarRespostaService;
-import br.ueg.eventos.application.service.resposta.BuscarRespostaService;
-import br.ueg.eventos.application.service.resposta.CriarRespostaService;
-import br.ueg.eventos.application.service.resposta.RemoverRespostaService;
 import br.ueg.eventos.infrastructure.adapter.in.web.AtividadeController;
 import br.ueg.eventos.infrastructure.adapter.in.web.EventoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.FrequenciaController;
 import br.ueg.eventos.infrastructure.adapter.in.web.InscricaoController;
-import br.ueg.eventos.infrastructure.adapter.in.web.UsuarioController;
-import br.ueg.eventos.infrastructure.adapter.in.web.QuestionarioController;
+import br.ueg.eventos.infrastructure.adapter.in.web.LocalController;
 import br.ueg.eventos.infrastructure.adapter.in.web.QuestaoController;
+import br.ueg.eventos.infrastructure.adapter.in.web.QuestionarioController;
 import br.ueg.eventos.infrastructure.adapter.in.web.RespostaController;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryFrequenciaRepository;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryInscricaoRepository;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryUsuarioRepository;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryQuestionarioRepository;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryQuestaoRepository;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryRespostaRepository;
+import br.ueg.eventos.infrastructure.adapter.in.web.UsuarioController;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.Sha256PasswordEncryptor;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteAtividadeRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteConnectionFactory;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteDatabaseInitializer;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteEventoRepository;
-import br.ueg.eventos.application.port.in.local.AlterarLocalPort;
-import br.ueg.eventos.application.port.in.local.BuscarLocalPorIdPort;
-import br.ueg.eventos.application.port.in.local.CadastrarLocalPort;
-import br.ueg.eventos.application.port.in.local.DeletarLocalPort;
-import br.ueg.eventos.application.port.in.local.ListarLocaisPort;
-import br.ueg.eventos.application.port.out.LocalRepositoryPort;
-import br.ueg.eventos.application.service.local.AlterarLocalService;
-import br.ueg.eventos.application.service.local.BuscarLocalPorIdService;
-import br.ueg.eventos.application.service.local.CadastrarLocalService;
-import br.ueg.eventos.application.service.local.DeletarLocalService;
-import br.ueg.eventos.application.service.local.ListarLocaisService;
-import br.ueg.eventos.infrastructure.adapter.in.web.LocalController;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryLocalRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteFrequenciaRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteInscricaoRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteLocalRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteQuestaoRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteQuestionarioRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteRespostaRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteUsuarioRepository;
 import io.javalin.Javalin;
 
 public class Main {
@@ -138,21 +138,21 @@ public class Main {
         AtividadeRepositoryPort atividadeRepository =
                 new SqliteAtividadeRepository(connectionFactory);
         InscricaoRepositoryPort inscricaoRepository =
-                new InMemoryInscricaoRepository();
+                new SqliteInscricaoRepository(connectionFactory);
         FrequenciaRepositoryPort frequenciaRepository =
-                new InMemoryFrequenciaRepository();
+                new SqliteFrequenciaRepository(connectionFactory);
         UsuarioRepositoryPort usuarioRepository =
-                new InMemoryUsuarioRepository();
+                new SqliteUsuarioRepository(connectionFactory);
         PasswordEncryptor passwordEncryptor =
                 new Sha256PasswordEncryptor();
         LocalRepositoryPort localRepository =
-                new InMemoryLocalRepository();
+                new SqliteLocalRepository(connectionFactory);
         QuestionarioRepositoryPort questionarioRepository =
-                new InMemoryQuestionarioRepository();
+                new SqliteQuestionarioRepository(connectionFactory);
         QuestaoRepositoryPort questaoRepository =
-                new InMemoryQuestaoRepository();
+                new SqliteQuestaoRepository(connectionFactory);
         RespostaRepositoryPort respostaRepository =
-                new InMemoryRespostaRepository();
+                new SqliteRespostaRepository(connectionFactory);
 
         // Evento
         CriarEventoPort criarEventoPort =
@@ -195,7 +195,8 @@ public class Main {
                 new InscreverUsuarioService(
                         inscricaoRepository,
                         atividadeRepository,
-                        eventoRepository
+                        eventoRepository,
+                        usuarioRepository
                 );
         BuscarInscricaoPorIdPort buscarInscricaoPorIdPort =
                 new BuscarInscricaoPorIdService(inscricaoRepository);
