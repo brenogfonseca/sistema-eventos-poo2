@@ -97,12 +97,17 @@ CREATE TABLE respostas (
 );
 
 CREATE INDEX idx_respostas_questao
+    ON respostas(questao_id);
+
+CREATE INDEX idx_respostas_usuario
+    ON respostas(usuario_id);
 
 CREATE TABLE trilhas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL UNIQUE
 );
-    ON respostas(questao_id);
 
-CREATE INDEX idx_respostas_usuario
-    ON respostas(usuario_id);
+CREATE TABLE tipos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL UNIQUE
+);
