@@ -97,6 +97,11 @@ CREATE TABLE respostas (
 );
 
 CREATE INDEX idx_respostas_questao
+
+CREATE TABLE trilhas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL UNIQUE
+);
     ON respostas(questao_id);
 
 CREATE INDEX idx_respostas_usuario
