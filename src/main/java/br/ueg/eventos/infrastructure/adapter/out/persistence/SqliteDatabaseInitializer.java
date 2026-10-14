@@ -25,7 +25,7 @@ public class SqliteDatabaseInitializer {
                     "/db/migration/V2__criar_tabelas_restantes.sql"
             ),
             new Migracao(
-                    ,
+                    3,
                     "Criacao da tabela de tipo e trilha",
                     "/db/migration/V3__criar_tabelas_tipos_e_trilhas.sql"
             )
