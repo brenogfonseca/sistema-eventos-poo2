@@ -16,12 +16,12 @@ public class Atividade {
     private LocalDate data;
     private boolean controlaVagas;
     private int vagas;
-    private String tipo;
+    private Tipo tipo;
     private TipoFrequenciaEnum tipoFrequencia;
     private Trilha trilha;
 
     public Atividade(String nome, Long eventoId, Local local, LocalTime horaInicio, LocalTime horaFim,
-                     LocalDate data, boolean controlaVagas, int vagas, String tipo, 
+                     LocalDate data, boolean controlaVagas, int vagas, Tipo tipo, 
                      TipoFrequenciaEnum tipoFrequencia, Trilha trilha) {
         setNome(nome);
         this.eventoId = eventoId;
@@ -37,7 +37,7 @@ public class Atividade {
     }
 
     public Atividade(Long id, String nome, Long eventoId, Local local, LocalTime horaInicio, LocalTime horaFim,
-                     LocalDate data, boolean controlaVagas, int vagas, String tipo, 
+                     LocalDate data, boolean controlaVagas, int vagas, Tipo tipo, 
                      TipoFrequenciaEnum tipoFrequencia, Trilha trilha) {
         this(nome, eventoId, local, horaInicio, horaFim, data, controlaVagas, vagas, tipo, tipoFrequencia, trilha);
         this.id = id;
@@ -76,7 +76,7 @@ public class Atividade {
     public LocalDate getData() { return data; }
     public boolean isControlaVagas() { return controlaVagas; }
     public int getVagas() { return vagas; }
-    public String getTipo() { return tipo; }
+    public Tipo getTipo() { return tipo; }
     public TipoFrequenciaEnum getTipoFrequencia() { return tipoFrequencia; }
     public Trilha getTrilha() { return trilha; }
 }
