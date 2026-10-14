@@ -5,6 +5,7 @@ import br.ueg.eventos.domain.model.Atividade;
 import br.ueg.eventos.domain.model.Local;
 import br.ueg.eventos.domain.model.TipoFrequenciaEnum;
 import br.ueg.eventos.domain.model.Trilha;
+import br.ueg.eventos.domain.model.Tipo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
