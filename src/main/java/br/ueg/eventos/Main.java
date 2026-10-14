@@ -196,12 +196,14 @@ public class Main {
         CadastrarAtividadePort cadastrarAtividadePort =
                 new CadastrarAtividadeService(
                         atividadeRepository,
-                        eventoRepository
+                        eventoRepository,
+                        tipoRepository
                 );
         AtualizarAtividadePort atualizarAtividadePort =
                 new AtualizarAtividadeService(
                         atividadeRepository,
-                        eventoRepository
+                        eventoRepository,
+                        tipoRepository
                 );
         ExcluirAtividadePort excluirAtividadePort =
                 new ExcluirAtividadeService(atividadeRepository);
