@@ -101,13 +101,3 @@ CREATE INDEX idx_respostas_questao
 
 CREATE INDEX idx_respostas_usuario
     ON respostas(usuario_id);
-
-CREATE TABLE trilhas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL UNIQUE
-);
-
-CREATE TABLE tipos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL UNIQUE
-);
