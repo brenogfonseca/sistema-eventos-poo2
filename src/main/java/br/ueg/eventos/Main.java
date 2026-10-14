@@ -47,6 +47,11 @@ import br.ueg.eventos.application.port.in.trilha.BuscarTrilhaPort;
 import br.ueg.eventos.application.port.in.trilha.CadastrarTrilhaPort;
 import br.ueg.eventos.application.port.in.trilha.DeletarTrilhaPort;
 import br.ueg.eventos.application.port.in.trilha.ListarTrilhasPort;
+import br.ueg.eventos.application.port.in.tipo.AlterarTipoPort;
+import br.ueg.eventos.application.port.in.tipo.BuscarTipoPort;
+import br.ueg.eventos.application.port.in.tipo.CadastrarTipoPort;
+import br.ueg.eventos.application.port.in.tipo.DeletarTipoPort;
+import br.ueg.eventos.application.port.in.tipo.ListarTiposPort;
 import br.ueg.eventos.application.port.out.AtividadeRepositoryPort;
 import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.application.port.out.FrequenciaRepositoryPort;
@@ -58,6 +63,7 @@ import br.ueg.eventos.application.port.out.QuestionarioRepositoryPort;
 import br.ueg.eventos.application.port.out.RespostaRepositoryPort;
 import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.application.port.out.TrilhaRepositoryPort;
+import br.ueg.eventos.application.port.out.TipoRepositoryPort;
 import br.ueg.eventos.application.service.atividade.AtualizarAtividadeService;
 import br.ueg.eventos.application.service.atividade.BuscarAtividadePorIdService;
 import br.ueg.eventos.application.service.atividade.CadastrarAtividadeService;
@@ -105,6 +111,11 @@ import br.ueg.eventos.application.service.trilha.BuscarTrilhaService;
 import br.ueg.eventos.application.service.trilha.CadastrarTrilhaService;
 import br.ueg.eventos.application.service.trilha.DeletarTrilhaService;
 import br.ueg.eventos.application.service.trilha.ListarTrilhasService;
+import br.ueg.eventos.application.service.tipo.AlterarTipoService;
+import br.ueg.eventos.application.service.tipo.BuscarTipoService;
+import br.ueg.eventos.application.service.tipo.CadastrarTipoService;
+import br.ueg.eventos.application.service.tipo.DeletarTipoService;
+import br.ueg.eventos.application.service.tipo.ListarTiposService;
 import br.ueg.eventos.infrastructure.adapter.in.web.AtividadeController;
 import br.ueg.eventos.infrastructure.adapter.in.web.EventoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.FrequenciaController;
@@ -115,6 +126,7 @@ import br.ueg.eventos.infrastructure.adapter.in.web.QuestionarioController;
 import br.ueg.eventos.infrastructure.adapter.in.web.RespostaController;
 import br.ueg.eventos.infrastructure.adapter.in.web.UsuarioController;
 import br.ueg.eventos.infrastructure.adapter.in.web.TrilhaController;
+import br.ueg.eventos.infrastructure.adapter.in.web.TipoController;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.Sha256PasswordEncryptor;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteAtividadeRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteConnectionFactory;
@@ -128,6 +140,7 @@ import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteQuestionarioR
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteRespostaRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteUsuarioRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteTrilhaRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteTipoRepository;
 import io.javalin.Javalin;
 
 public class Main {
@@ -168,6 +181,8 @@ public class Main {
                 new SqliteRespostaRepository(connectionFactory);
         TrilhaRepositoryPort trilhaRepository =
                 new SqliteTrilhaRepository(connectionFactory);
+        TipoRepositoryPort tipoRepository =
+                new SqliteTipoRepository(connectionFactory);        
 
         // Evento
         CriarEventoPort criarEventoPort =
@@ -203,6 +218,24 @@ public class Main {
                 excluirAtividadePort,
                 buscarAtividadePorIdPort,
                 listarAtividadesPorEventoPort
+        );
+
+        CadastrarTipoPort cadastrarTipoPort =
+                new CadastrarTipoService(tipoRepository);
+        ListarTiposPort listarTiposPort =
+                new ListarTiposService(tipoRepository);
+        BuscarTipoPort buscarTipoPorIdPort =
+                new BuscarTipoService(tipoRepository);
+        AlterarTipoPort alterarTipoPort =
+                new AlterarTipoService(tipoRepository);
+        DeletarTipoPort deletarTipoPort =
+                new DeletarTipoService(tipoRepository);
+        TipoController tipoController = new TipoController(
+                cadastrarTipoPort,
+                listarTiposPort,
+                buscarTipoPorIdPort,
+                alterarTipoPort,
+                deletarTipoPort
         );
 
         // Inscrição
@@ -401,6 +434,7 @@ public class Main {
         questaoController.registerRoutes(app);
         respostaController.registerRoutes(app);
         trilhaController.registerRoutes(app);
+        tipoController.registerRoutes(app);
 
         app.start(8080);
 
