@@ -42,6 +42,11 @@ import br.ueg.eventos.application.port.in.usuario.BuscarUsuarioPorIdPort;
 import br.ueg.eventos.application.port.in.usuario.CadastrarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.DeletarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.ListarUsuariosPort;
+import br.ueg.eventos.application.port.in.trilha.AlterarTrilhaPort;
+import br.ueg.eventos.application.port.in.trilha.BuscarTrilhaPort;
+import br.ueg.eventos.application.port.in.trilha.CadastrarTrilhaPort;
+import br.ueg.eventos.application.port.in.trilha.DeletarTrilhaPort;
+import br.ueg.eventos.application.port.in.trilha.ListarTrilhasPort;
 import br.ueg.eventos.application.port.out.AtividadeRepositoryPort;
 import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.application.port.out.FrequenciaRepositoryPort;
@@ -52,6 +57,7 @@ import br.ueg.eventos.application.port.out.QuestaoRepositoryPort;
 import br.ueg.eventos.application.port.out.QuestionarioRepositoryPort;
 import br.ueg.eventos.application.port.out.RespostaRepositoryPort;
 import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
+import br.ueg.eventos.application.port.out.TrilhaRepositoryPort;
 import br.ueg.eventos.application.service.atividade.AtualizarAtividadeService;
 import br.ueg.eventos.application.service.atividade.BuscarAtividadePorIdService;
 import br.ueg.eventos.application.service.atividade.CadastrarAtividadeService;
@@ -94,6 +100,11 @@ import br.ueg.eventos.application.service.usuario.BuscarUsuarioPorIdService;
 import br.ueg.eventos.application.service.usuario.CadastrarUsuarioService;
 import br.ueg.eventos.application.service.usuario.DeletarUsuarioService;
 import br.ueg.eventos.application.service.usuario.ListarUsuariosService;
+import br.ueg.eventos.application.service.trilha.AlterarTrilhaService;
+import br.ueg.eventos.application.service.trilha.BuscarTrilhaService;
+import br.ueg.eventos.application.service.trilha.CadastrarTrilhaService;
+import br.ueg.eventos.application.service.trilha.DeletarTrilhaService;
+import br.ueg.eventos.application.service.trilha.ListarTrilhasService;
 import br.ueg.eventos.infrastructure.adapter.in.web.AtividadeController;
 import br.ueg.eventos.infrastructure.adapter.in.web.EventoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.FrequenciaController;
@@ -103,6 +114,7 @@ import br.ueg.eventos.infrastructure.adapter.in.web.QuestaoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.QuestionarioController;
 import br.ueg.eventos.infrastructure.adapter.in.web.RespostaController;
 import br.ueg.eventos.infrastructure.adapter.in.web.UsuarioController;
+import br.ueg.eventos.infrastructure.adapter.in.web.TrilhaController;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.Sha256PasswordEncryptor;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteAtividadeRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteConnectionFactory;
@@ -115,6 +127,7 @@ import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteQuestaoReposi
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteQuestionarioRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteRespostaRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteUsuarioRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteTrilhaRepository;
 import io.javalin.Javalin;
 
 public class Main {
@@ -153,6 +166,8 @@ public class Main {
                 new SqliteQuestaoRepository(connectionFactory);
         RespostaRepositoryPort respostaRepository =
                 new SqliteRespostaRepository(connectionFactory);
+        TrilhaRepositoryPort trilhaRepository =
+                new SqliteTrilhaRepository(connectionFactory);
 
         // Evento
         CriarEventoPort criarEventoPort =
@@ -351,6 +366,26 @@ public class Main {
                 buscarRespostaPort
         );
 
+        // Trilha
+        CadastrarTrilhaPort cadastrarTrilhaPort =
+                new CadastrarTrilhaService(trilhaRepository);
+        ListarTrilhasPort listarTrilhasPort =
+                new ListarTrilhasService(trilhaRepository);
+        BuscarTrilhaPort buscarTrilhaPorIdPort =
+                new BuscarTrilhaService(trilhaRepository);
+        AlterarTrilhaPort alterarTrilhaPort =
+                new AlterarTrilhaService(trilhaRepository);
+        DeletarTrilhaPort deletarTrilhaPort =
+                new DeletarTrilhaService(trilhaRepository);
+
+        TrilhaController trilhaController = new TrilhaController(
+                cadastrarTrilhaPort,
+                listarTrilhasPort,
+                buscarTrilhaPorIdPort,
+                alterarTrilhaPort,
+                deletarTrilhaPort
+        );
+
         // Servidor e rotas
         Javalin app = Javalin.create(config -> {
             config.showJavalinBanner = false;
@@ -365,6 +400,7 @@ public class Main {
         questionarioController.registerRoutes(app);
         questaoController.registerRoutes(app);
         respostaController.registerRoutes(app);
+        trilhaController.registerRoutes(app);
 
         app.start(8080);
 
