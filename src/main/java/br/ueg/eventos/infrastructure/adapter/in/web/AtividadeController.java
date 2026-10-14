@@ -3,6 +3,7 @@ package br.ueg.eventos.infrastructure.adapter.in.web;
 import br.ueg.eventos.application.port.in.atividade.*;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Atividade;
+import br.ueg.eventos.domain.model.Tipo;
 import br.ueg.eventos.domain.model.Local;
 import br.ueg.eventos.domain.model.TipoFrequenciaEnum;
 import br.ueg.eventos.domain.model.Trilha;
@@ -53,7 +54,7 @@ public class AtividadeController {
         public String data;
         public boolean controlaVagas;
         public int vagas;
-        public String tipo;
+        public Long tipoId;
         public TipoFrequenciaEnum tipoFrequencia;
         public Trilha trilha;
     }
@@ -69,7 +70,7 @@ public class AtividadeController {
                 LocalDate.parse(request.data),
                 request.controlaVagas,
                 request.vagas,
-                request.tipo,
+                request.tipoId == null ? null : new Tipo(request.tipoId, null),
                 request.tipoFrequencia,
                 request.trilha
         );
