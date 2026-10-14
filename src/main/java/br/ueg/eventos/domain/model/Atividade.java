@@ -80,3 +80,22 @@ public class Atividade {
     public TipoFrequenciaEnum getTipoFrequencia() { return tipoFrequencia; }
     public Trilha getTrilha() { return trilha; }
 }
+
+// Retorna o tipo associado à atividade.
+    public Tipo getTipo() {
+        return tipo;
+    }
+
+    // Atualiza o tipo após a validação no service.
+    public void setTipo(Tipo tipo) {
+        this.tipo = tipo;
+    }
+
+    public TipoFrequenciaEnum getTipoFrequencia() {
+        return tipoFrequencia;
+    }
+
+    public Trilha getTrilha() {
+        return trilha;
+    }
+}
