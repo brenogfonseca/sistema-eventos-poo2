@@ -32,6 +32,7 @@ public class SqliteAtividadeRepository implements AtividadeRepositoryPort {
                 controla_vagas,
                 vagas,
                 tipo,
+                tipo_id,
                 tipo_frequencia,
                 trilha_id,
                 trilha_nome
@@ -50,6 +51,7 @@ public class SqliteAtividadeRepository implements AtividadeRepositoryPort {
                 controla_vagas = ?,
                 vagas = ?,
                 tipo = ?,
+                tipo_id = ?,
                 tipo_frequencia = ?,
                 trilha_id = ?,
                 trilha_nome = ?
@@ -191,7 +193,7 @@ public class SqliteAtividadeRepository implements AtividadeRepositoryPort {
             Atividade atividade) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(UPDATE)) {
             preencherParametros(statement, atividade);
-            statement.setLong(14, atividade.getId());
+            statement.setLong(15, atividade.getId());
 
             if (statement.executeUpdate() == 0) {
                 throw new SQLException(
@@ -202,51 +204,65 @@ public class SqliteAtividadeRepository implements AtividadeRepositoryPort {
     }
 
     private void preencherParametros(
-            PreparedStatement statement,
-            Atividade atividade) throws SQLException {
-        statement.setString(1, atividade.getNome());
-        statement.setLong(2, atividade.getEventoId());
+        PreparedStatement statement,
+        Atividade atividade) throws SQLException {
+    statement.setString(1, atividade.getNome());
+    statement.setLong(2, atividade.getEventoId());
 
-        Local local = atividade.getLocal();
-        if (local == null) {
+    Local local = atividade.getLocal();
+    if (local == null) {
+        statement.setNull(3, java.sql.Types.INTEGER);
+        statement.setNull(4, java.sql.Types.VARCHAR);
+    } else {
+        if (local.getId() == null) {
             statement.setNull(3, java.sql.Types.INTEGER);
-            statement.setNull(4, java.sql.Types.VARCHAR);
         } else {
-            if (local.getId() == null) {
-                statement.setNull(3, java.sql.Types.INTEGER);
-            } else {
-                statement.setLong(3, local.getId());
-            }
-            statement.setString(4, local.getNome());
+            statement.setLong(3, local.getId());
         }
+        statement.setString(4, local.getNome());
+    }
 
-        statement.setString(5, atividade.getHoraInicio().toString());
-        statement.setString(6, atividade.getHoraFim().toString());
-        statement.setString(7, atividade.getData().toString());
-        statement.setInt(8, atividade.isControlaVagas() ? 1 : 0);
-        statement.setInt(9, atividade.getVagas());
-        statement.setString(10, atividade.getTipo());
+    statement.setString(5, atividade.getHoraInicio().toString());
+    statement.setString(6, atividade.getHoraFim().toString());
+    statement.setString(7, atividade.getData().toString());
+    statement.setInt(8, atividade.isControlaVagas() ? 1 : 0);
+    statement.setInt(9, atividade.getVagas());
 
-        TipoFrequenciaEnum tipoFrequencia = atividade.getTipoFrequencia();
-        if (tipoFrequencia == null) {
-            statement.setNull(11, java.sql.Types.VARCHAR);
+    // Grava o nome antigo e o ID do tipo cadastrado.
+    Tipo tipo = atividade.getTipo();
+    if (tipo == null) {
+        statement.setNull(10, java.sql.Types.VARCHAR);
+        statement.setNull(11, java.sql.Types.INTEGER);
+    } else {
+        statement.setString(10, tipo.getNome());
+
+        if (tipo.getId() == null) {
+            statement.setNull(11, java.sql.Types.INTEGER);
         } else {
-            statement.setString(11, tipoFrequencia.name());
-        }
-
-        Trilha trilha = atividade.getTrilha();
-        if (trilha == null) {
-            statement.setNull(12, java.sql.Types.INTEGER);
-            statement.setNull(13, java.sql.Types.VARCHAR);
-        } else {
-            if (trilha.getId() == null) {
-                statement.setNull(12, java.sql.Types.INTEGER);
-            } else {
-                statement.setLong(12, trilha.getId());
-            }
-            statement.setString(13, trilha.getNome());
+            statement.setLong(11, tipo.getId());
         }
     }
+
+    TipoFrequenciaEnum tipoFrequencia = atividade.getTipoFrequencia();
+    if (tipoFrequencia == null) {
+        statement.setNull(12, java.sql.Types.VARCHAR);
+    } else {
+        statement.setString(12, tipoFrequencia.name());
+    }
+
+    Trilha trilha = atividade.getTrilha();
+    if (trilha == null) {
+        statement.setNull(13, java.sql.Types.INTEGER);
+        statement.setNull(14, java.sql.Types.VARCHAR);
+    } else {
+        if (trilha.getId() == null) {
+            statement.setNull(13, java.sql.Types.INTEGER);
+        } else {
+            statement.setLong(13, trilha.getId());
+        }
+        statement.setString(14, trilha.getNome());
+    }
+}
 
     private Optional<Atividade> buscarPorId(
             Connection connection,
@@ -265,18 +281,33 @@ public class SqliteAtividadeRepository implements AtividadeRepositoryPort {
         }
     }
 
-    private Atividade mapearAtividade(ResultSet resultSet)
+      private Atividade mapearAtividade(ResultSet resultSet)
             throws SQLException {
         long localId = resultSet.getLong("local_id");
         boolean localIdNulo = resultSet.wasNull();
         String localNome = resultSet.getString("local_nome");
+
         Local local = localIdNulo && localNome == null
                 ? null
                 : new Local(localIdNulo ? null : localId, localNome);
 
+        long tipoId = resultSet.getLong("tipo_id");
+        boolean tipoIdNulo = resultSet.wasNull();
+
+        // Usa o nome do catálogo; mantém o texto antigo como alternativa.
+        String tipoNome = resultSet.getString("tipo_nome");
+        if (tipoNome == null) {
+            tipoNome = resultSet.getString("tipo");
+        }
+
+        Tipo tipo = tipoIdNulo && tipoNome == null
+                ? null
+                : new Tipo(tipoIdNulo ? null : tipoId, tipoNome);
+
         long trilhaId = resultSet.getLong("trilha_id");
         boolean trilhaIdNulo = resultSet.wasNull();
         String trilhaNome = resultSet.getString("trilha_nome");
+
         Trilha trilha = trilhaIdNulo && trilhaNome == null
                 ? null
                 : new Trilha(trilhaIdNulo ? null : trilhaId, trilhaNome);
@@ -296,7 +327,7 @@ public class SqliteAtividadeRepository implements AtividadeRepositoryPort {
                 LocalDate.parse(resultSet.getString("data")),
                 resultSet.getInt("controla_vagas") == 1,
                 resultSet.getInt("vagas"),
-                resultSet.getString("tipo"),
+                tipo,
                 tipoFrequencia,
                 trilha
         );
