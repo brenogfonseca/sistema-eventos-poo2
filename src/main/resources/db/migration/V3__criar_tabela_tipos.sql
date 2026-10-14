@@ -1,5 +1,0 @@
--- Guarda os tipos cadastrados.
-CREATE TABLE tipos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL UNIQUE
-);
