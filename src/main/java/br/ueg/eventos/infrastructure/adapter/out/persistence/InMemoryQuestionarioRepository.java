@@ -40,7 +40,7 @@ public class InMemoryQuestionarioRepository
             // Reconstrói a entidade com o ID gerado.
             questionario = new Questionario(
                     id,
-                    questionario.getIdEvento(),
+                    questionario.getIdAtividade(),
                     questionario.getTitulo()
             );
         } else {
@@ -65,10 +65,7 @@ public class InMemoryQuestionarioRepository
         return Optional.ofNullable(questionarios.get(id));
     }
 
-    /**
-     * Busca o questionário associado ao ID recebido.
-     * No modelo atual, o vínculo está armazenado como idEvento.
-     */
+    /** Busca o questionário associado à atividade informada. */
     @Override
     public Optional<Questionario> buscarPorIdAtividade(Long idAtividade) {
         if (idAtividade == null) {
@@ -79,7 +76,7 @@ public class InMemoryQuestionarioRepository
                 .stream()
                 .filter(questionario ->
                         idAtividade.equals(
-                                questionario.getIdEvento().longValue()
+                                questionario.getIdAtividade().longValue()
                         )
                 )
                 .findFirst();

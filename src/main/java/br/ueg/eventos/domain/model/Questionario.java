@@ -8,24 +8,24 @@ import java.util.List;
 public class Questionario {
 
     private Integer id;
-    private Integer idEvento;
+    private Integer idAtividade;
     private String titulo;
     private List<Questao> questoes;
 
 // Construtor para CRIAR um novo questionário (sem ID)
-    public Questionario(Integer idEvento, String titulo) {
-        if (idEvento == null || idEvento <= 0) {
-            throw new RegraNegocioException("O questionário deve obrigatoriamente estar vinculado a um ID de evento válido.");
+    public Questionario(Integer idAtividade, String titulo) {
+        if (idAtividade == null || idAtividade <= 0) {
+            throw new RegraNegocioException("O questionário deve obrigatoriamente estar vinculado a um ID de atividade válido.");
         }
         setTituloComValidacao(titulo);
-        
-        this.idEvento = idEvento;
+
+        this.idAtividade = idAtividade;
         this.questoes = new ArrayList<>();
     }
 
     // Construtor para RECUPERAR do banco (com ID)
-    public Questionario(Integer id, Integer idEvento, String titulo) {
-        this(idEvento, titulo); // Reaproveita as validações do construtor acima
+    public Questionario(Integer id, Integer idAtividade, String titulo) {
+        this(idAtividade, titulo); // Reaproveita as validações do construtor acima
         this.id = id;
     }
     // Permite reconfigurar/atualizar o título do questionário.
@@ -68,8 +68,8 @@ public class Questionario {
     public Integer getId() {
         return id;
     }
-    public Integer getIdEvento() {
-        return idEvento;
+    public Integer getIdAtividade() {
+        return idAtividade;
     }
     public String getTitulo() {
         return titulo;
