@@ -103,6 +103,17 @@ public class InMemoryEventoRepository implements EventoRepositoryPort {
     }
 
     // Exclusão lógica
+    @Override
+    public void deletar(Long id) {
+        if (id == null) {
+            return;
+        }
+        Evento evento = eventos.get(id);
+        if (evento != null) {
+            evento.deletar();
+        }
+    }
+
     public boolean deletarPorId(Long id) {
 
         Evento evento = eventos.get(id);

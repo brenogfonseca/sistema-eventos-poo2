@@ -16,6 +16,9 @@ public class ListarEventosService implements ListarEventosPort {
 
     @Override
     public List<Evento> executar() {
-        return eventoRepository.listarTodos();
+        return eventoRepository.listarTodos().stream()
+                .filter(evento -> !evento.isDeletado())
+                .collect(java.util.stream.Collectors.toList());
     }
+
 }
