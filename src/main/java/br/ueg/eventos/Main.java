@@ -16,10 +16,11 @@ import br.ueg.eventos.application.service.evento.AlterarEventoService;
 import br.ueg.eventos.application.service.evento.BuscarEventoPorIdService;
 import br.ueg.eventos.application.service.evento.BuscarVinculoOrganizadorService;
 import br.ueg.eventos.application.service.evento.ExcluirEventoService;
-import br.ueg.eventos.infrastructure.adapter.out.persistence.InMemoryVinculoOrganizadorRepository;
 import br.ueg.eventos.application.port.in.frequencia.AtualizarPresencaPort;
 import br.ueg.eventos.application.port.in.frequencia.BuscarFrequenciaPorIdPort;
+import br.ueg.eventos.application.port.in.frequencia.GerarCheckinQrPort;
 import br.ueg.eventos.application.port.in.frequencia.ListarFrequenciasPorInscricaoPort;
+import br.ueg.eventos.application.port.in.frequencia.RegistrarCheckinQrPort;
 import br.ueg.eventos.application.port.in.frequencia.RegistrarFrequenciaPort;
 import br.ueg.eventos.application.port.in.inscricao.BuscarInscricaoPorIdPort;
 import br.ueg.eventos.application.port.in.inscricao.CancelarInscricaoPort;
@@ -53,6 +54,7 @@ import br.ueg.eventos.application.port.in.usuario.CadastrarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.DeletarUsuarioPort;
 import br.ueg.eventos.application.port.in.usuario.ListarUsuariosPort;
 import br.ueg.eventos.application.port.out.AtividadeRepositoryPort;
+import br.ueg.eventos.application.port.out.CheckinQrTokenSignerPort;
 import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.application.port.out.FrequenciaRepositoryPort;
 import br.ueg.eventos.application.port.out.InscricaoRepositoryPort;
@@ -71,7 +73,9 @@ import br.ueg.eventos.application.service.evento.CriarEventoService;
 import br.ueg.eventos.application.service.evento.ListarEventosService;
 import br.ueg.eventos.application.service.frequencia.AtualizarPresencaService;
 import br.ueg.eventos.application.service.frequencia.BuscarFrequenciaPorIdService;
+import br.ueg.eventos.application.service.frequencia.GerarCheckinQrService;
 import br.ueg.eventos.application.service.frequencia.ListarFrequenciasPorInscricaoService;
+import br.ueg.eventos.application.service.frequencia.RegistrarCheckinQrService;
 import br.ueg.eventos.application.service.frequencia.RegistrarFrequenciaService;
 import br.ueg.eventos.application.service.inscricao.BuscarInscricaoPorIdService;
 import br.ueg.eventos.application.service.inscricao.CancelarInscricaoService;
@@ -105,6 +109,7 @@ import br.ueg.eventos.application.service.usuario.CadastrarUsuarioService;
 import br.ueg.eventos.application.service.usuario.DeletarUsuarioService;
 import br.ueg.eventos.application.service.usuario.ListarUsuariosService;
 import br.ueg.eventos.infrastructure.adapter.in.web.AtividadeController;
+import br.ueg.eventos.infrastructure.adapter.in.web.CheckinQrController;
 import br.ueg.eventos.infrastructure.adapter.in.web.EventoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.FrequenciaController;
 import br.ueg.eventos.infrastructure.adapter.in.web.InscricaoController;
@@ -125,6 +130,9 @@ import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteQuestaoReposi
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteQuestionarioRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteRespostaRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteUsuarioRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteVinculoOrganizadorRepository;
+import br.ueg.eventos.infrastructure.adapter.out.qrcode.ZxingQrCodeGenerator;
+import br.ueg.eventos.infrastructure.adapter.out.security.HmacCheckinQrTokenSigner;
 import io.javalin.Javalin;
 
 public class Main {
@@ -164,7 +172,7 @@ public class Main {
         RespostaRepositoryPort respostaRepository =
                 new SqliteRespostaRepository(connectionFactory);
         VinculoOrganizadorRepositoryPort vinculoOrganizadorRepository =
-                new InMemoryVinculoOrganizadorRepository();
+                new SqliteVinculoOrganizadorRepository(connectionFactory);
                
 
         // Evento
@@ -278,6 +286,29 @@ public class Main {
                 listarFrequenciasPorInscricaoPort,
                 atualizarPresencaPort
         );
+        CheckinQrTokenSignerPort checkinQrTokenSigner =
+                new HmacCheckinQrTokenSigner();
+        GerarCheckinQrPort gerarCheckinQrPort =
+                new GerarCheckinQrService(
+                        inscricaoRepository,
+                        atividadeRepository,
+                        checkinQrTokenSigner
+                );
+        RegistrarCheckinQrPort registrarCheckinQrPort =
+                new RegistrarCheckinQrService(
+                        checkinQrTokenSigner,
+                        inscricaoRepository,
+                        atividadeRepository,
+                        frequenciaRepository,
+                        usuarioRepository,
+                        vinculoOrganizadorRepository,
+                        registrarFrequenciaPort
+                );
+        CheckinQrController checkinQrController = new CheckinQrController(
+                gerarCheckinQrPort,
+                registrarCheckinQrPort,
+                new ZxingQrCodeGenerator()
+        );
 
         // Usuário
         CadastrarUsuarioPort cadastrarUsuarioPort =
@@ -390,6 +421,7 @@ public class Main {
         atividadeController.registerRoutes(app);
         inscricaoController.registerRoutes(app);
         frequenciaController.registerRoutes(app);
+        checkinQrController.registerRoutes(app);
         usuarioController.registerRoutes(app);
         localController.registerRoutes(app);
         questionarioController.registerRoutes(app);

@@ -54,6 +54,12 @@ $titulo      = $titulo ?? 'Sistema de Eventos';
                 </a>
             </li>
             <li>
+                <a href="checkin_qr.php"
+                   class="<?= $paginaAtiva === 'checkin_qr' ? 'ativo' : '' ?>">
+                    Leitor QR
+                </a>
+            </li>
+            <li>
                 <a href="criar_evento.php"
                    class="<?= $paginaAtiva === 'criar_evento' ? 'ativo' : '' ?>">
                     + Criar Evento

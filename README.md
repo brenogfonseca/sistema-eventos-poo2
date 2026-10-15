@@ -53,6 +53,25 @@ iniciar_sistema.bat
 ```
 Esse script abre automaticamente a API Java na porta 8080, o servidor PHP na porta 3000 e abre a página no navegador.
 
+### Check-in por QR Code
+
+O QR Code aparece nas inscrições ativas de atividades configuradas com frequência `CHECKIN`. Cada código contém um token assinado, válido por 15 minutos. Para gerar outro, atualize a página **Minhas Inscrições**. O leitor fica no menu **Leitor QR** e registra a presença somente para um administrador ou organizador do evento. Os vínculos de organizador são persistidos pela migração `V3` do SQLite.
+
+Antes de iniciar o sistema, configure uma chave secreta aleatória com pelo menos 32 bytes. No PowerShell, você pode gerar e manter uma chave no perfil do Windows com:
+
+```powershell
+$bytesQr = New-Object byte[] 32
+$rngQr = [Security.Cryptography.RandomNumberGenerator]::Create()
+$rngQr.GetBytes($bytesQr)
+$chaveQr = [Convert]::ToBase64String($bytesQr)
+$rngQr.Dispose()
+[Environment]::SetEnvironmentVariable('EVENTOS_QR_SECRET', $chaveQr, 'User')
+```
+
+Depois, abra um novo terminal e execute `iniciar_sistema.bat`. A mesma chave precisa continuar configurada para que tokens já emitidos possam ser validados. O leitor pela câmera requer um navegador compatível com `BarcodeDetector` e permissão para usar a câmera; se não estiver disponível, é possível colar o token manualmente.
+
+Fluxo esperado: crie uma atividade com `tipoFrequencia: "CHECKIN"`, faça uma inscrição ativa, entre em **Minhas Inscrições** para exibir o QR e leia esse código pela página **Leitor QR** usando a conta de administrador ou de um organizador vinculado ao evento.
+
 ---
 
 ## 👤 Usuário Administrador Inicial (Para Testes)
