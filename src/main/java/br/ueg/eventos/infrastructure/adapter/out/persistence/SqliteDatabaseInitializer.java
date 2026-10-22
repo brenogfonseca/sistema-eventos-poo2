@@ -23,6 +23,11 @@ public class SqliteDatabaseInitializer {
                     2,
                     "Criacao das demais tabelas do sistema",
                     "/db/migration/V2__criar_tabelas_restantes.sql"
+            ),
+            new Migracao(
+                    3,
+                    "Criacao da tabela de vinculos de organizadores",
+                    "/db/migration/V3__criar_vinculos_organizadores.sql"
             )
     );
 

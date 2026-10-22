@@ -110,7 +110,26 @@ ob_start();
                         $idAtiv      = $inscricao['idAtividade'] ?? '—';
                         $dataInsc    = $inscricao['dataInscricao'] ?? '—';
                         $status      = $inscricao['status']      ?? 'ATIVO';
-                        $ativo       = $status === 'ATIVO';
+                        $ativo       = array_key_exists('cancelada', $inscricao)
+                            ? !$inscricao['cancelada']
+                            : $status === 'ATIVO';
+
+                        // Gera um QR curto e assinado apenas para a inscrição ativa do usuário logado.
+                        $qrCheckin = null;
+                        $erroQrCheckin = '';
+                        if ($ativo && is_numeric($idInsc)) {
+                            $resultadoQr = chamar_api(
+                                'GET',
+                                "/inscricoes/{$idInsc}/checkin-qr",
+                                null,
+                                headers_autenticados()
+                            );
+                            if (!$resultadoQr['erro']) {
+                                $qrCheckin = $resultadoQr['corpo'];
+                            } else {
+                                $erroQrCheckin = $resultadoQr['msg_erro'];
+                            }
+                        }
 
                         // Formata a data de inscrição
                         if ($dataInsc !== '—') {
@@ -154,6 +173,24 @@ ob_start();
                                             Cancelar
                                         </button>
                                     </form>
+                                    <?php if ($qrCheckin && !empty($qrCheckin['imagemBase64'])): ?>
+                                        <div class="mt-sm">
+                                            <img
+                                                src="data:image/png;base64,<?= htmlspecialchars($qrCheckin['imagemBase64'], ENT_QUOTES, 'UTF-8') ?>"
+                                                alt="QR Code para check-in da inscrição #<?= htmlspecialchars((string)$idInsc) ?>"
+                                                width="140"
+                                                height="140"
+                                            >
+                                            <div class="text-muted" style="font-size:0.78rem;">
+                                                QR válido até <?= htmlspecialchars(date('d/m/Y H:i', strtotime($qrCheckin['expiraEm'])), ENT_QUOTES, 'UTF-8') ?>.
+                                                Atualize a página para gerar outro.
+                                            </div>
+                                        </div>
+                                    <?php elseif ($erroQrCheckin): ?>
+                                        <div class="text-muted" style="font-size:0.78rem;" title="<?= htmlspecialchars($erroQrCheckin, ENT_QUOTES, 'UTF-8') ?>">
+                                            QR indisponível para esta atividade.
+                                        </div>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <form method="POST" action="minhas_inscricoes.php"
                                           id="form-reativar-<?= (int)$idInsc ?>"
