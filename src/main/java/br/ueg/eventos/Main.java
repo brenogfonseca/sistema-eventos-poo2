@@ -133,7 +133,14 @@ import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteUsuarioReposi
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteVinculoOrganizadorRepository;
 import br.ueg.eventos.infrastructure.adapter.out.qrcode.ZxingQrCodeGenerator;
 import br.ueg.eventos.infrastructure.adapter.out.security.HmacCheckinQrTokenSigner;
+import br.ueg.eventos.domain.exception.RegraNegocioException;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.javalin.Javalin;
+import io.javalin.http.HttpStatus;
+import io.javalin.json.JavalinJackson;
+
+import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
@@ -225,7 +232,8 @@ public class Main {
                 atualizarAtividadePort,
                 excluirAtividadePort,
                 buscarAtividadePorIdPort,
-                listarAtividadesPorEventoPort
+                listarAtividadesPorEventoPort,
+                localRepository
         );
 
         // Inscrição
@@ -415,6 +423,18 @@ public class Main {
         // Servidor e rotas
         Javalin app = Javalin.create(config -> {
             config.showJavalinBanner = false;
+            config.jsonMapper(new JavalinJackson().updateMapper(mapper -> {
+                mapper.registerModule(new JavaTimeModule());
+                mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            }));
+        });
+
+        // Handler global de exceções de negócio
+        app.exception(RegraNegocioException.class, (e, ctx) -> {
+            String mensagem = (e.getMessage() != null && !e.getMessage().isBlank())
+                    ? e.getMessage()
+                    : "Regra de negócio violada.";
+            ctx.status(HttpStatus.BAD_REQUEST).json(Map.of("erro", mensagem));
         });
 
         eventoController.registerRoutes(app);

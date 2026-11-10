@@ -14,21 +14,20 @@ public class SqliteConnectionFactory {
     private final String jdbcUrl;
 
     public SqliteConnectionFactory() {
-        this.databasePath = resolverCaminhoBanco();
+        Path caminhoEscolhido = resolverCaminhoBanco();
+        Path caminhoFinal = caminhoEscolhido;
 
         try {
-            Path diretorio = databasePath.toAbsolutePath().getParent();
-
+            Path diretorio = caminhoEscolhido.toAbsolutePath().getParent();
             if (diretorio != null) {
                 Files.createDirectories(diretorio);
             }
-        } catch (IOException e) {
-            throw new IllegalStateException(
-                    "Não foi possível criar a pasta do banco SQLite.",
-                    e
-            );
+        } catch (Exception e) {
+            // Em caso de restrição de permissão no diretório padrão, utiliza fallback no diretório corrente
+            caminhoFinal = Path.of("eventos.db").toAbsolutePath().normalize();
         }
 
+        this.databasePath = caminhoFinal;
         String caminhoJDBC = databasePath
                 .toAbsolutePath()
                 .toString()

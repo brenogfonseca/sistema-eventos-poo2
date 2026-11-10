@@ -118,12 +118,12 @@ function chamar_api(string $metodo, string $endpoint, ?array $dados = null, arra
     // Tenta extrair mensagem de erro legível da resposta
     $msgErro = '';
     if ($temErro) {
-        if (is_string($corpo)) {
-            $msgErro = $corpo; // A API retornou texto puro no corpo do erro
-        } elseif (isset($corpo['mensagem'])) {
-            $msgErro = $corpo['mensagem'];
-        } elseif (isset($corpo['erro'])) {
+        if (is_array($corpo) && isset($corpo['erro']) && is_string($corpo['erro'])) {
             $msgErro = $corpo['erro'];
+        } elseif (is_array($corpo) && isset($corpo['mensagem']) && is_string($corpo['mensagem'])) {
+            $msgErro = $corpo['mensagem'];
+        } elseif (is_string($corpo)) {
+            $msgErro = $corpo; // A API retornou texto puro no corpo do erro
         } else {
             $msgErro = 'Ocorreu um erro (HTTP ' . $statusHttp . ').';
         }

@@ -281,9 +281,14 @@ public class SqliteAtividadeRepository implements AtividadeRepositoryPort {
                 : new Trilha(trilhaIdNulo ? null : trilhaId, trilhaNome);
 
         String frequencia = resultSet.getString("tipo_frequencia");
-        TipoFrequenciaEnum tipoFrequencia = frequencia == null
-                ? null
-                : TipoFrequenciaEnum.valueOf(frequencia);
+        TipoFrequenciaEnum tipoFrequencia = null;
+        if (frequencia != null) {
+            try {
+                tipoFrequencia = TipoFrequenciaEnum.valueOf(frequencia);
+            } catch (IllegalArgumentException e) {
+                tipoFrequencia = TipoFrequenciaEnum.CHECKIN;
+            }
+        }
 
         return new Atividade(
                 resultSet.getLong("id"),
