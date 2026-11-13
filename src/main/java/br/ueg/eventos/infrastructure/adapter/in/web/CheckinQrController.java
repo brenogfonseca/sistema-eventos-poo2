@@ -33,12 +33,14 @@ public class CheckinQrController {
     }
 
     public void registerRoutes(Javalin app) {
-        app.get("/inscricoes/{id}/checkin-qr", this::gerarQrCode);
+        app.get("/inscricoes/evento/{id}/checkin-qr", this::gerarQrCode);
         app.post("/frequencias/checkin-qr", this::registrarCheckin);
     }
 
     public static class RegistrarCheckinRequest {
         public String token;
+        public Long idAtividade;
+        public String acao;
     }
 
     public static class CheckinQrResponse {
@@ -94,6 +96,8 @@ public class CheckinQrController {
             }
             Frequencia frequencia = registrarCheckinQrPort.executar(
                     request == null ? null : request.token,
+                    request == null ? null : request.idAtividade,
+                    request == null ? null : request.acao,
                     idResponsavel
             );
             ctx.status(HttpStatus.CREATED).json(frequencia);

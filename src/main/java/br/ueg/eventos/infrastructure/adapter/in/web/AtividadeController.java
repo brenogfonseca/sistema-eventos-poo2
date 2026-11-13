@@ -1,6 +1,7 @@
 package br.ueg.eventos.infrastructure.adapter.in.web;
 
 import br.ueg.eventos.application.port.in.atividade.*;
+import br.ueg.eventos.domain.exception.AcessoNegadoException;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Atividade;
 import br.ueg.eventos.domain.model.Local;
@@ -83,10 +84,12 @@ public class AtividadeController {
             Atividade atividade = converter(request, null);
 
             Atividade cadastrada =
-                    cadastrarAtividadePort.executar(atividade);
+                    cadastrarAtividadePort.executar(atividade, extrairUsuarioId(ctx));
 
             ctx.status(HttpStatus.CREATED).json(cadastrada);
 
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (RegraNegocioException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
         } catch (java.time.format.DateTimeParseException e) {
@@ -108,10 +111,12 @@ public class AtividadeController {
             Atividade atividade = converter(request, id);
 
             Atividade atualizada =
-                    atualizarAtividadePort.executar(id, atividade);
+                    atualizarAtividadePort.executar(id, atividade, extrairUsuarioId(ctx));
 
             ctx.status(HttpStatus.OK).json(atualizada);
 
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (RegraNegocioException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
         } catch (NumberFormatException e) {
@@ -123,6 +128,16 @@ public class AtividadeController {
         } catch (Exception e) {
             ctx.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .result("Erro interno: " + e.getMessage());
+        }
+    }
+
+    private Integer extrairUsuarioId(Context ctx) {
+        try {
+            int id = Integer.parseInt(ctx.header("X-Usuario-Id"));
+            if (id <= 0) throw new NumberFormatException();
+            return id;
+        } catch (Exception e) {
+            throw new AcessoNegadoException("Informe o organizador autenticado no cabeçalho X-Usuario-Id.");
         }
     }
 

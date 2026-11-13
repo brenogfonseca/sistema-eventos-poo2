@@ -24,6 +24,18 @@ public class Atividade {
                      LocalDate data, boolean controlaVagas, int vagas, String tipo, 
                      TipoFrequenciaEnum tipoFrequencia, Trilha trilha) {
         setNome(nome);
+        if (eventoId == null || eventoId <= 0) {
+            throw new RegraNegocioException("A atividade deve pertencer a um evento válido.");
+        }
+        if (horaInicio == null || horaFim == null || data == null) {
+            throw new RegraNegocioException("Data, horário de início e horário de fim são obrigatórios.");
+        }
+        if (tipoFrequencia == null) {
+            throw new RegraNegocioException("Selecione um critério de presença para a atividade.");
+        }
+        if (vagas < 0) {
+            throw new RegraNegocioException("O número de vagas não pode ser negativo.");
+        }
         this.eventoId = eventoId;
         this.local = local;
         this.horaInicio = horaInicio;

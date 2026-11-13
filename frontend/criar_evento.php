@@ -38,6 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dataFim    = trim($_POST['dataFim']    ?? '');
     $horaFim    = trim($_POST['horaFim']    ?? '');
     $capacidade = (int)($_POST['capacidade'] ?? 0);
+    $certificado = isset($_POST['certificado']);
+    $frequenciaMinima = (int)($_POST['frequenciaMinima'] ?? 75);
+    $inscricoesAbertas = ($_POST['inscricoesAbertas'] ?? '0') === '1';
 
     // 2. Validação básica antes de chamar a API
     if (empty($titulo) || empty($dataInicio) || empty($dataFim)) {
@@ -59,6 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'inicio'             => $inicioISO,   // "2026-10-01T08:00:00"
             'fim'                => $fimISO,      // "2026-10-03T18:00:00"
             'capacidade'         => $capacidade,
+            'certificado'        => $certificado,
+            'frequenciaMinima'   => $frequenciaMinima,
+            'inscricoesAbertas'  => $inscricoesAbertas,
             'usuarioExecutorId'  => id_usuario_logado(), // ID do organizador/criador
         ];
 
@@ -112,6 +118,21 @@ ob_start();
                 value="<?= htmlspecialchars($_POST['titulo'] ?? '') ?>"
                 required
             >
+        </div>
+
+        <div class="form-grupo">
+            <label><input type="checkbox" name="certificado" value="1" <?= isset($_POST['certificado']) ? 'checked' : '' ?>> Emitir certificado para este evento</label>
+            <label for="frequenciaMinima">Frequência mínima para elegibilidade</label>
+            <select id="frequenciaMinima" name="frequenciaMinima">
+                <?php foreach ([50, 75, 100] as $percentual): ?>
+                    <option value="<?= $percentual ?>" <?= (int)($_POST['frequenciaMinima'] ?? 75) === $percentual ? 'selected' : '' ?>><?= $percentual ?>%</option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="form-grupo">
+            <input type="hidden" name="inscricoesAbertas" value="0">
+            <label><input type="checkbox" name="inscricoesAbertas" value="1" <?= array_key_exists('inscricoesAbertas', $_POST) ? (($_POST['inscricoesAbertas'] ?? '0') === '1' ? 'checked' : '') : 'checked' ?>> Abrir inscrições para participantes</label>
         </div>
 
         <div class="form-grupo">

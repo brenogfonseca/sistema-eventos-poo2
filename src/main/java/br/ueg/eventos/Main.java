@@ -16,18 +16,21 @@ import br.ueg.eventos.application.service.evento.AlterarEventoService;
 import br.ueg.eventos.application.service.evento.BuscarEventoPorIdService;
 import br.ueg.eventos.application.service.evento.BuscarVinculoOrganizadorService;
 import br.ueg.eventos.application.service.evento.ExcluirEventoService;
-import br.ueg.eventos.application.port.in.frequencia.AtualizarPresencaPort;
 import br.ueg.eventos.application.port.in.frequencia.BuscarFrequenciaPorIdPort;
 import br.ueg.eventos.application.port.in.frequencia.GerarCheckinQrPort;
 import br.ueg.eventos.application.port.in.frequencia.ListarFrequenciasPorInscricaoPort;
 import br.ueg.eventos.application.port.in.frequencia.RegistrarCheckinQrPort;
 import br.ueg.eventos.application.port.in.frequencia.RegistrarFrequenciaPort;
+import br.ueg.eventos.application.port.in.frequencia.RegistrarPresencaManualPort;
 import br.ueg.eventos.application.port.in.inscricao.BuscarInscricaoPorIdPort;
-import br.ueg.eventos.application.port.in.inscricao.CancelarInscricaoPort;
-import br.ueg.eventos.application.port.in.inscricao.InscreverUsuarioPort;
+import br.ueg.eventos.application.port.in.inscricao.CalcularFrequenciaCertificadoPort;
+import br.ueg.eventos.application.port.in.inscricao.CancelarInscricaoEventoPort;
+import br.ueg.eventos.application.port.in.inscricao.InscreverNoEventoPort;
+import br.ueg.eventos.application.port.in.inscricao.SelecionarAtividadesPort;
+import br.ueg.eventos.application.port.in.inscricao.ListarInscricoesEventoPorUsuarioPort;
+import br.ueg.eventos.application.port.in.inscricao.ListarAtividadesEscolhidasPort;
 import br.ueg.eventos.application.port.in.inscricao.ListarInscricoesPorAtividadePort;
 import br.ueg.eventos.application.port.in.inscricao.ListarInscricoesPorUsuarioPort;
-import br.ueg.eventos.application.port.in.inscricao.ReativarInscricaoPort;
 import br.ueg.eventos.application.port.in.local.AlterarLocalPort;
 import br.ueg.eventos.application.port.in.local.BuscarLocalPorIdPort;
 import br.ueg.eventos.application.port.in.local.CadastrarLocalPort;
@@ -58,6 +61,7 @@ import br.ueg.eventos.application.port.out.CheckinQrTokenSignerPort;
 import br.ueg.eventos.application.port.out.EventoRepositoryPort;
 import br.ueg.eventos.application.port.out.FrequenciaRepositoryPort;
 import br.ueg.eventos.application.port.out.InscricaoRepositoryPort;
+import br.ueg.eventos.application.port.out.InscricaoEventoRepositoryPort;
 import br.ueg.eventos.application.port.out.LocalRepositoryPort;
 import br.ueg.eventos.application.port.out.PasswordEncryptor;
 import br.ueg.eventos.application.port.out.QuestaoRepositoryPort;
@@ -71,18 +75,21 @@ import br.ueg.eventos.application.service.atividade.ExcluirAtividadeService;
 import br.ueg.eventos.application.service.atividade.ListarAtividadesPorEventoService;
 import br.ueg.eventos.application.service.evento.CriarEventoService;
 import br.ueg.eventos.application.service.evento.ListarEventosService;
-import br.ueg.eventos.application.service.frequencia.AtualizarPresencaService;
 import br.ueg.eventos.application.service.frequencia.BuscarFrequenciaPorIdService;
 import br.ueg.eventos.application.service.frequencia.GerarCheckinQrService;
 import br.ueg.eventos.application.service.frequencia.ListarFrequenciasPorInscricaoService;
 import br.ueg.eventos.application.service.frequencia.RegistrarCheckinQrService;
 import br.ueg.eventos.application.service.frequencia.RegistrarFrequenciaService;
+import br.ueg.eventos.application.service.frequencia.RegistrarPresencaManualService;
 import br.ueg.eventos.application.service.inscricao.BuscarInscricaoPorIdService;
-import br.ueg.eventos.application.service.inscricao.CancelarInscricaoService;
-import br.ueg.eventos.application.service.inscricao.InscreverUsuarioService;
+import br.ueg.eventos.application.service.inscricao.CalcularFrequenciaCertificadoService;
+import br.ueg.eventos.application.service.inscricao.CancelarInscricaoEventoService;
+import br.ueg.eventos.application.service.inscricao.InscreverNoEventoService;
+import br.ueg.eventos.application.service.inscricao.SelecionarAtividadesService;
+import br.ueg.eventos.application.service.inscricao.ListarInscricoesEventoPorUsuarioService;
+import br.ueg.eventos.application.service.inscricao.ListarAtividadesEscolhidasService;
 import br.ueg.eventos.application.service.inscricao.ListarInscricoesPorAtividadeService;
 import br.ueg.eventos.application.service.inscricao.ListarInscricoesPorUsuarioService;
-import br.ueg.eventos.application.service.inscricao.ReativarInscricaoService;
 import br.ueg.eventos.application.service.local.AlterarLocalService;
 import br.ueg.eventos.application.service.local.BuscarLocalPorIdService;
 import br.ueg.eventos.application.service.local.CadastrarLocalService;
@@ -113,6 +120,7 @@ import br.ueg.eventos.infrastructure.adapter.in.web.CheckinQrController;
 import br.ueg.eventos.infrastructure.adapter.in.web.EventoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.FrequenciaController;
 import br.ueg.eventos.infrastructure.adapter.in.web.InscricaoController;
+import br.ueg.eventos.infrastructure.adapter.in.web.InscricaoEventoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.LocalController;
 import br.ueg.eventos.infrastructure.adapter.in.web.QuestaoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.QuestionarioController;
@@ -125,6 +133,7 @@ import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteDatabaseIniti
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteEventoRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteFrequenciaRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteInscricaoRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteInscricaoEventoRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteLocalRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteQuestaoRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.SqliteQuestionarioRepository;
@@ -157,6 +166,8 @@ public class Main {
                 new SqliteAtividadeRepository(connectionFactory);
         InscricaoRepositoryPort inscricaoRepository =
                 new SqliteInscricaoRepository(connectionFactory);
+        InscricaoEventoRepositoryPort inscricaoEventoRepository =
+                new SqliteInscricaoEventoRepository(connectionFactory);
         FrequenciaRepositoryPort frequenciaRepository =
                 new SqliteFrequenciaRepository(connectionFactory);
         UsuarioRepositoryPort usuarioRepository =
@@ -204,12 +215,16 @@ public class Main {
         CadastrarAtividadePort cadastrarAtividadePort =
                 new CadastrarAtividadeService(
                         atividadeRepository,
-                        eventoRepository
+                        eventoRepository,
+                        usuarioRepository,
+                        vinculoOrganizadorRepository
                 );
         AtualizarAtividadePort atualizarAtividadePort =
                 new AtualizarAtividadeService(
                         atividadeRepository,
-                        eventoRepository
+                        eventoRepository,
+                        usuarioRepository,
+                        vinculoOrganizadorRepository
                 );
         ExcluirAtividadePort excluirAtividadePort =
                 new ExcluirAtividadeService(atividadeRepository);
@@ -229,13 +244,23 @@ public class Main {
         );
 
         // Inscrição
-        InscreverUsuarioPort inscreverUsuarioPort =
-                new InscreverUsuarioService(
-                        inscricaoRepository,
-                        atividadeRepository,
+        InscreverNoEventoPort inscreverNoEventoPort =
+                new InscreverNoEventoService(
                         eventoRepository,
+                        inscricaoEventoRepository,
                         usuarioRepository
                 );
+        SelecionarAtividadesPort selecionarAtividadesPort =
+                new SelecionarAtividadesService(
+                        inscricaoEventoRepository,
+                        inscricaoRepository,
+                        atividadeRepository,
+                        eventoRepository
+                );
+        ListarInscricoesEventoPorUsuarioPort listarInscricoesEventoPorUsuarioPort =
+                new ListarInscricoesEventoPorUsuarioService(inscricaoEventoRepository);
+        ListarAtividadesEscolhidasPort listarAtividadesEscolhidasPort =
+                new ListarAtividadesEscolhidasService(inscricaoEventoRepository, inscricaoRepository);
         BuscarInscricaoPorIdPort buscarInscricaoPorIdPort =
                 new BuscarInscricaoPorIdService(inscricaoRepository);
         ListarInscricoesPorAtividadePort listarInscricoesPorAtividadePort =
@@ -245,24 +270,10 @@ public class Main {
                 );
         ListarInscricoesPorUsuarioPort listarInscricoesPorUsuarioPort =
                 new ListarInscricoesPorUsuarioService(inscricaoRepository);
-        CancelarInscricaoPort cancelarInscricaoPort =
-                new CancelarInscricaoService(
-                        inscricaoRepository,
-                        atividadeRepository
-                );
-        ReativarInscricaoPort reativarInscricaoPort =
-                new ReativarInscricaoService(
-                        inscricaoRepository,
-                        atividadeRepository,
-                        eventoRepository
-                );
         InscricaoController inscricaoController = new InscricaoController(
-                inscreverUsuarioPort,
                 buscarInscricaoPorIdPort,
                 listarInscricoesPorAtividadePort,
-                listarInscricoesPorUsuarioPort,
-                cancelarInscricaoPort,
-                reativarInscricaoPort
+                listarInscricoesPorUsuarioPort
         );
 
         // Frequência
@@ -278,25 +289,55 @@ public class Main {
                         frequenciaRepository,
                         inscricaoRepository
                 );
-        AtualizarPresencaPort atualizarPresencaPort =
-                new AtualizarPresencaService(frequenciaRepository);
+        RegistrarPresencaManualPort registrarPresencaManualPort =
+                new RegistrarPresencaManualService(
+                        inscricaoEventoRepository,
+                        inscricaoRepository,
+                        atividadeRepository,
+                        usuarioRepository,
+                        vinculoOrganizadorRepository,
+                        registrarFrequenciaPort
+                );
         FrequenciaController frequenciaController = new FrequenciaController(
-                registrarFrequenciaPort,
                 buscarFrequenciaPorIdPort,
                 listarFrequenciasPorInscricaoPort,
-                atualizarPresencaPort
+                registrarPresencaManualPort
         );
+        CalcularFrequenciaCertificadoPort calcularFrequenciaCertificadoPort =
+                new CalcularFrequenciaCertificadoService(
+                        inscricaoEventoRepository,
+                        inscricaoRepository,
+                        eventoRepository,
+                        atividadeRepository,
+                        frequenciaRepository
+                );
+        CancelarInscricaoEventoPort cancelarInscricaoEventoPort =
+                new CancelarInscricaoEventoService(
+                        inscricaoEventoRepository,
+                        inscricaoRepository,
+                        atividadeRepository
+                );
+        InscricaoEventoController inscricaoEventoController =
+                new InscricaoEventoController(
+                        inscreverNoEventoPort,
+                        listarInscricoesEventoPorUsuarioPort,
+                        selecionarAtividadesPort,
+                        listarAtividadesEscolhidasPort,
+                        calcularFrequenciaCertificadoPort,
+                        cancelarInscricaoEventoPort
+                );
         CheckinQrTokenSignerPort checkinQrTokenSigner =
                 new HmacCheckinQrTokenSigner();
         GerarCheckinQrPort gerarCheckinQrPort =
                 new GerarCheckinQrService(
-                        inscricaoRepository,
-                        atividadeRepository,
+                        inscricaoEventoRepository,
+                        eventoRepository,
                         checkinQrTokenSigner
                 );
         RegistrarCheckinQrPort registrarCheckinQrPort =
                 new RegistrarCheckinQrService(
                         checkinQrTokenSigner,
+                        inscricaoEventoRepository,
                         inscricaoRepository,
                         atividadeRepository,
                         frequenciaRepository,
@@ -420,6 +461,7 @@ public class Main {
         eventoController.registerRoutes(app);
         atividadeController.registerRoutes(app);
         inscricaoController.registerRoutes(app);
+        inscricaoEventoController.registerRoutes(app);
         frequenciaController.registerRoutes(app);
         checkinQrController.registerRoutes(app);
         usuarioController.registerRoutes(app);

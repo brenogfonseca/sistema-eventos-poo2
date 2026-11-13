@@ -1,221 +1,105 @@
 <?php
-/**
- * minhas_inscricoes.php — Módulo de Inscrições: Agenda do participante
- * ─────────────────────────────────────────────────────────────────────────────
- * FLUXO DIDÁTICO:
- *   1. Verifica se o usuário está logado (exigir_login()).
- *   2. Busca todas as inscrições do usuário:
- *      GET /inscricoes/usuario/{idUsuario}
- *   3. Exibe em uma tabela com status (ATIVO / CANCELADO) e ações.
- *   4. Botão "Cancelar" envia PATCH /inscricoes/{id}/cancelar.
- *   5. Botão "Reativar" envia PATCH /inscricoes/{id}/reativar.
- *
- * Endpoints utilizados:
- *   GET   /inscricoes/usuario/{idUsuario}
- *   PATCH /inscricoes/{id}/cancelar
- *   PATCH /inscricoes/{id}/reativar
- * ─────────────────────────────────────────────────────────────────────────────
- */
 require_once __DIR__ . '/api_service.php';
-exigir_login(); // Redireciona para login se não logado
+exigir_login();
 
 $idUsuario = id_usuario_logado();
-$erro      = '';
-$sucesso   = '';
-
-// ── Processa ação de cancelar ou reativar inscrição ───────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $idInscricao = (int)($_POST['id_inscricao'] ?? 0);
-    $acao        = trim($_POST['acao'] ?? '');
-
-    if ($idInscricao > 0 && in_array($acao, ['cancelar', 'reativar'])) {
-
-        // PATCH /inscricoes/{id}/cancelar  ou  PATCH /inscricoes/{id}/reativar
-        // Esses endpoints não têm corpo; apenas o ID na URL e o método PATCH.
-        $resultado = chamar_api(
-            'PATCH',
-            "/inscricoes/{$idInscricao}/{$acao}"
-        );
-
-        if ($resultado['erro']) {
-            $erro = $resultado['msg_erro'] ?: "Erro ao {$acao} a inscrição.";
-        } else {
-            $sucesso = $acao === 'cancelar'
-                ? 'Inscrição cancelada com sucesso.'
-                : 'Inscrição reativada com sucesso! ✅';
-        }
-    }
+iniciar_sessao();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'cancelar_evento') {
+    $idInscricaoEvento = (int)($_POST['id_inscricao_evento'] ?? 0);
+    $cancelamento = chamar_api('DELETE', "/inscricoes/evento/{$idInscricaoEvento}", null, headers_autenticados());
+    $_SESSION['inscricoes_feedback'] = $cancelamento['erro']
+        ? ['sucesso' => false, 'mensagem' => $cancelamento['msg_erro']]
+        : ['sucesso' => true, 'mensagem' => 'Inscrição no evento cancelada. As vagas das atividades foram liberadas.'];
+    header('Location: minhas_inscricoes.php');
+    exit;
 }
+$feedback = $_SESSION['inscricoes_feedback'] ?? null;
+unset($_SESSION['inscricoes_feedback']);
+$resultado = chamar_api('GET', "/inscricoes/eventos/usuario/{$idUsuario}", null, headers_autenticados());
+$inscricoes = $resultado['erro'] ? [] : ($resultado['corpo'] ?? []);
+$erro = $resultado['erro'] ? ($resultado['msg_erro'] ?? '') : '';
 
-// ── Busca as inscrições do usuário logado na API ──────────────────────────────
-// GET /inscricoes/usuario/{idUsuario}
-$resultado    = chamar_api('GET', "/inscricoes/usuario/{$idUsuario}");
-$inscricoes   = [];
-$erroListagem = '';
-
-if ($resultado['erro']) {
-    $erroListagem = $resultado['msg_erro'];
-} else {
-    $inscricoes = $resultado['corpo'] ?? [];
-}
-
-// ── Monta o HTML ──────────────────────────────────────────────────────────────
 ob_start();
 ?>
-
 <div class="secao-cabecalho">
-    <div>
-        <h1 class="secao-titulo">📋 Minhas Inscrições</h1>
-        <p class="secao-subtitulo">Sua agenda de atividades</p>
-    </div>
-    <a href="eventos.php" class="btn btn-secundario">← Ver Eventos</a>
+    <div><h1 class="secao-titulo">Minhas inscrições</h1><p class="secao-subtitulo">Sua inscrição nos eventos, atividades escolhidas e QR Code de acesso.</p></div>
+    <a href="eventos.php" class="btn btn-secundario">← Ver eventos</a>
 </div>
 
-<!-- Alertas de retorno -->
-<?php if ($sucesso): ?>
-    <div class="alerta alerta-sucesso">✅ <?= htmlspecialchars($sucesso) ?></div>
-<?php endif; ?>
-<?php if ($erro): ?>
-    <div class="alerta alerta-erro">⚠️ <?= htmlspecialchars($erro) ?></div>
-<?php endif; ?>
-<?php if ($erroListagem): ?>
-    <div class="alerta alerta-erro">⚠️ <?= htmlspecialchars($erroListagem) ?></div>
+<?php if ($erro): ?><div class="alerta alerta-erro">⚠️ <?= htmlspecialchars($erro) ?></div><?php endif; ?>
+<?php if ($feedback): ?><div class="alerta <?= $feedback['sucesso'] ? 'alerta-sucesso' : 'alerta-erro' ?>"><?= htmlspecialchars($feedback['mensagem']) ?></div><?php endif; ?>
+<?php if (!$erro && !$inscricoes): ?>
+    <div class="card text-center" style="padding:3rem"><p>Você ainda não está inscrito em eventos.</p><a href="eventos.php" class="btn btn-primario">Explorar eventos</a></div>
 <?php endif; ?>
 
-<!-- Lista de inscrições -->
-<?php if (empty($inscricoes) && !$erroListagem): ?>
-    <div class="card text-center" style="padding: 3rem;">
-        <p style="font-size: 2rem;">📭</p>
-        <p class="text-muted">Você ainda não tem inscrições.</p>
-        <a href="eventos.php" class="btn btn-primario mt-md">Explorar eventos</a>
-    </div>
-
-<?php else: ?>
-    <div class="card">
-        <div class="tabela-responsiva">
-            <table class="tabela" id="tabela-inscricoes">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Atividade (ID)</th>
-                        <th>Data Inscrição</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($inscricoes as $inscricao):
-                        $idInsc      = $inscricao['id']          ?? '—';
-                        $idAtiv      = $inscricao['idAtividade'] ?? '—';
-                        $dataInsc    = $inscricao['dataInscricao'] ?? '—';
-                        $status      = $inscricao['status']      ?? 'ATIVO';
-                        $ativo       = array_key_exists('cancelada', $inscricao)
-                            ? !$inscricao['cancelada']
-                            : $status === 'ATIVO';
-
-                        // Gera um QR curto e assinado apenas para a inscrição ativa do usuário logado.
-                        $qrCheckin = null;
-                        $erroQrCheckin = '';
-                        if ($ativo && is_numeric($idInsc)) {
-                            $resultadoQr = chamar_api(
-                                'GET',
-                                "/inscricoes/{$idInsc}/checkin-qr",
-                                null,
-                                headers_autenticados()
-                            );
-                            if (!$resultadoQr['erro']) {
-                                $qrCheckin = $resultadoQr['corpo'];
-                            } else {
-                                $erroQrCheckin = $resultadoQr['msg_erro'];
-                            }
-                        }
-
-                        // Formata a data de inscrição
-                        if ($dataInsc !== '—') {
-                            $dataFormatada = date('d/m/Y H:i', strtotime($dataInsc));
-                        } else {
-                            $dataFormatada = '—';
-                        }
-                    ?>
-                        <tr id="inscricao-<?= (int)$idInsc ?>">
-                            <td>#<?= htmlspecialchars((string)$idInsc) ?></td>
-                            <td>
-                                <a href="atividades.php?evento_id=<?= htmlspecialchars((string)($inscricao['idEvento'] ?? '')) ?>">
-                                    Atividade #<?= htmlspecialchars((string)$idAtiv) ?>
-                                </a>
-                            </td>
-                            <td><?= htmlspecialchars($dataFormatada) ?></td>
-                            <td>
-                                <?php if ($ativo): ?>
-                                    <span class="badge badge-ativo">Ativo</span>
-                                <?php else: ?>
-                                    <span class="badge badge-cancelado">Cancelado</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <!--
-                                    Formulários com PATCH /inscricoes/{id}/cancelar
-                                    ou PATCH /inscricoes/{id}/reativar.
-                                    O PHP acima detecta 'acao' e chama chamar_api().
-                                -->
-                                <?php if ($ativo): ?>
-                                    <form method="POST" action="minhas_inscricoes.php"
-                                          id="form-cancelar-<?= (int)$idInsc ?>"
-                                          style="display:inline;"
-                                          onsubmit="return confirm('Cancelar esta inscrição?');">
-                                        <input type="hidden" name="id_inscricao" value="<?= (int)$idInsc ?>">
-                                        <input type="hidden" name="acao" value="cancelar">
-                                        <button type="submit"
-                                                class="btn btn-perigo"
-                                                id="btn-cancelar-<?= (int)$idInsc ?>"
-                                                style="font-size:0.82rem; padding:0.3rem 0.8rem;">
-                                            Cancelar
-                                        </button>
-                                    </form>
-                                    <?php if ($qrCheckin && !empty($qrCheckin['imagemBase64'])): ?>
-                                        <div class="mt-sm">
-                                            <img
-                                                src="data:image/png;base64,<?= htmlspecialchars($qrCheckin['imagemBase64'], ENT_QUOTES, 'UTF-8') ?>"
-                                                alt="QR Code para check-in da inscrição #<?= htmlspecialchars((string)$idInsc) ?>"
-                                                width="140"
-                                                height="140"
-                                            >
-                                            <div class="text-muted" style="font-size:0.78rem;">
-                                                QR válido até <?= htmlspecialchars(date('d/m/Y H:i', strtotime($qrCheckin['expiraEm'])), ENT_QUOTES, 'UTF-8') ?>.
-                                                Atualize a página para gerar outro.
-                                            </div>
-                                        </div>
-                                    <?php elseif ($erroQrCheckin): ?>
-                                        <div class="text-muted" style="font-size:0.78rem;" title="<?= htmlspecialchars($erroQrCheckin, ENT_QUOTES, 'UTF-8') ?>">
-                                            QR indisponível para esta atividade.
-                                        </div>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <form method="POST" action="minhas_inscricoes.php"
-                                          id="form-reativar-<?= (int)$idInsc ?>"
-                                          style="display:inline;">
-                                        <input type="hidden" name="id_inscricao" value="<?= (int)$idInsc ?>">
-                                        <input type="hidden" name="acao" value="reativar">
-                                        <button type="submit"
-                                                class="btn btn-sucesso"
-                                                id="btn-reativar-<?= (int)$idInsc ?>"
-                                                style="font-size:0.82rem; padding:0.3rem 0.8rem;">
-                                            Reativar
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+<?php foreach ($inscricoes as $inscricao):
+    $idInscricaoEvento = (int)($inscricao['id'] ?? 0);
+    $idEvento = (int)($inscricao['idEvento'] ?? 0);
+    $ativo = empty($inscricao['cancelada']);
+    $eventoResp = chamar_api('GET', "/eventos/{$idEvento}");
+    $evento = $eventoResp['erro'] ? [] : ($eventoResp['corpo'] ?? []);
+    $atividadesResp = $ativo ? chamar_api('GET', "/inscricoes/evento/{$idInscricaoEvento}/atividades", null, headers_autenticados()) : ['erro' => false, 'corpo' => []];
+    $qrResp = $ativo ? chamar_api('GET', "/inscricoes/evento/{$idInscricaoEvento}/checkin-qr", null, headers_autenticados()) : ['erro' => true, 'msg_erro' => 'Inscrição cancelada.'];
+    $frequenciaResp = $ativo ? chamar_api('GET', "/inscricoes/evento/{$idInscricaoEvento}/frequencia-certificado", null, headers_autenticados()) : ['erro' => true];
+    $frequencia = $frequenciaResp['erro'] ? null : ($frequenciaResp['corpo'] ?? null);
+?>
+<section class="card mb-md">
+    <div class="secao-cabecalho">
+        <div>
+            <h2><?= htmlspecialchars($evento['titulo'] ?? "Evento #{$idEvento}") ?></h2>
+            <span class="badge <?= $ativo ? 'badge-ativo' : 'badge-cancelado' ?>"><?= $ativo ? 'Inscrição ativa' : 'Cancelada' ?></span>
         </div>
+        <?php if ($ativo): ?><a class="btn btn-secundario" href="atividades.php?evento_id=<?= $idEvento ?>">Editar agenda</a><?php endif; ?>
     </div>
-<?php endif; ?>
+
+    <?php if ($ativo): ?>
+        <form method="POST" onsubmit="return confirm('Cancelar a inscrição no evento e todas as atividades escolhidas?');">
+            <input type="hidden" name="acao" value="cancelar_evento">
+            <input type="hidden" name="id_inscricao_evento" value="<?= $idInscricaoEvento ?>">
+            <button type="submit" class="btn btn-perigo">Cancelar inscrição no evento</button>
+        </form>
+    <?php endif; ?>
+
+    <h3>Atividades escolhidas</h3>
+    <?php $escolhidas = $atividadesResp['erro'] ? [] : ($atividadesResp['corpo'] ?? []); ?>
+    <?php if (!$ativo): ?>
+        <p class="text-muted">A inscrição foi cancelada.</p>
+    <?php elseif (!$escolhidas): ?>
+        <p class="text-muted">Você ainda não escolheu atividades. <a href="atividades.php?evento_id=<?= $idEvento ?>">Monte sua agenda</a>.</p>
+    <?php else: ?>
+        <ul>
+        <?php foreach ($escolhidas as $escolhida):
+            if (!empty($escolhida['cancelada'])) continue;
+            $idAtividade = (int)($escolhida['idAtividade'] ?? 0);
+            $atividadeResp = chamar_api('GET', "/atividades/{$idAtividade}");
+            $atividade = $atividadeResp['erro'] ? [] : ($atividadeResp['corpo'] ?? []);
+        ?>
+            <li><?= htmlspecialchars($atividade['nome'] ?? "Atividade #{$idAtividade}") ?> — <?= htmlspecialchars($atividade['data'] ?? '') ?> <?= htmlspecialchars($atividade['horaInicio'] ?? '') ?>–<?= htmlspecialchars($atividade['horaFim'] ?? '') ?></li>
+        <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+
+    <?php if ($ativo && $frequencia && !empty($frequencia['certificadoHabilitado'])): ?>
+        <p><strong>Frequência computada:</strong> <?= number_format((float)$frequencia['percentualFrequencia'], 2, ',', '.') ?>%
+            (mínimo <?= (int)$frequencia['frequenciaMinima'] ?>%) —
+            <?= !empty($frequencia['elegivel']) ? 'elegível ao certificado' : 'ainda não elegível' ?>
+        </p>
+    <?php endif; ?>
+
+    <?php if ($ativo && !$qrResp['erro'] && !empty($qrResp['corpo']['imagemBase64'])): ?>
+        <div class="mt-md">
+            <h3>Seu QR Code único para este evento</h3>
+            <img src="data:image/png;base64,<?= htmlspecialchars($qrResp['corpo']['imagemBase64'], ENT_QUOTES, 'UTF-8') ?>" alt="QR Code da inscrição no evento" width="180" height="180">
+            <p class="text-muted">Mostre este mesmo QR ao organizador em cada atividade escolhida. Válido até <?= htmlspecialchars(date('d/m/Y H:i', strtotime($qrResp['corpo']['expiraEm'] ?? ''))) ?>.</p>
+        </div>
+    <?php elseif ($ativo && $qrResp['erro']): ?>
+        <p class="text-muted">QR Code indisponível: <?= htmlspecialchars($qrResp['msg_erro'] ?? 'erro ao gerar o código') ?></p>
+    <?php endif; ?>
+</section>
+<?php endforeach; ?>
 
 <?php
-$conteudo    = ob_get_clean();
-$titulo      = 'Minhas Inscrições';
+$conteudo = ob_get_clean();
+$titulo = 'Minhas Inscrições';
 $paginaAtiva = 'inscricoes';
 include __DIR__ . '/layout.php';

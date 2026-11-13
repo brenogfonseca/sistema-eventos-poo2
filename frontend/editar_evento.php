@@ -58,6 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
     $dataFim    = trim($_POST['dataFim']    ?? '');
     $horaFim    = trim($_POST['horaFim']    ?? '');
     $capacidade = (int)($_POST['capacidade'] ?? 0);
+    $certificado = isset($_POST['certificado']);
+    $frequenciaMinima = (int)($_POST['frequenciaMinima'] ?? $eventoAtual['frequenciaMinima'] ?? 75);
+    $inscricoesAbertas = ($_POST['inscricoesAbertas'] ?? '0') === '1';
 
     if (empty($titulo) || empty($dataInicio) || empty($dataFim)) {
         $erro = 'Título, data de início e data de fim são obrigatórios.';
@@ -75,6 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
             'inicio'            => $inicioISO,
             'fim'               => $fimISO,
             'capacidade'        => $capacidade,
+            'certificado'       => $certificado,
+            'frequenciaMinima'  => $frequenciaMinima,
+            'inscricoesAbertas' => $inscricoesAbertas,
             'usuarioExecutorId' => $idUsuarioLogado, // Enviado no corpo JSON para a API Java
         ];
 
@@ -94,6 +100,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
 $valTitulo = $_POST['titulo'] ?? $eventoAtual['titulo'] ?? '';
 $valDescricao = $_POST['descricao'] ?? $eventoAtual['descricao'] ?? '';
 $valCapacidade = $_POST['capacidade'] ?? $eventoAtual['capacidade'] ?? '';
+$valCertificado = $_SERVER['REQUEST_METHOD'] === 'POST'
+    ? isset($_POST['certificado'])
+    : !empty($eventoAtual['certificado']);
+$valInscricoesAbertas = $_SERVER['REQUEST_METHOD'] === 'POST'
+    ? (($_POST['inscricoesAbertas'] ?? '0') === '1')
+    : !empty($eventoAtual['inscricoesAbertas']);
 
 $rawInicio = $eventoAtual['inicio'] ?? '';
 $rawFim = $eventoAtual['fim'] ?? '';
@@ -133,6 +145,22 @@ ob_start();
                 value="<?= htmlspecialchars($valTitulo) ?>"
                 required
             >
+        </div>
+
+        <div class="form-grupo">
+            <label><input type="checkbox" name="certificado" value="1"
+                <?= $valCertificado ? 'checked' : '' ?>> Emitir certificado para este evento</label>
+            <label for="frequenciaMinima">Frequência mínima para elegibilidade</label>
+            <select id="frequenciaMinima" name="frequenciaMinima">
+                <?php foreach ([50, 75, 100] as $percentual): ?>
+                    <option value="<?= $percentual ?>" <?= (int)($_POST['frequenciaMinima'] ?? $eventoAtual['frequenciaMinima'] ?? 75) === $percentual ? 'selected' : '' ?>><?= $percentual ?>%</option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="form-grupo">
+            <input type="hidden" name="inscricoesAbertas" value="0">
+            <label><input type="checkbox" name="inscricoesAbertas" value="1" <?= $valInscricoesAbertas ? 'checked' : '' ?>> Abrir inscrições para participantes</label>
         </div>
 
         <div class="form-grupo">

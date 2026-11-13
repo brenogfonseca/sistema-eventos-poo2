@@ -10,7 +10,6 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.UUID;
 
 /** Implementação HMAC-SHA256 dos tokens de check-in. */
 public class HmacCheckinQrTokenSigner implements CheckinQrTokenSignerPort {
@@ -30,13 +29,13 @@ public class HmacCheckinQrTokenSigner implements CheckinQrTokenSignerPort {
     }
 
     @Override
-    public String emitir(Long idInscricao, Instant expiraEm) {
-        if (idInscricao == null || idInscricao <= 0 || expiraEm == null) {
+    public String emitir(Long idInscricaoEvento, Instant expiraEm) {
+        if (idInscricaoEvento == null || idInscricaoEvento <= 0 || expiraEm == null) {
             throw new IllegalArgumentException("Inscrição e expiração são obrigatórias para emitir o QR Code.");
         }
 
-        String payload = "v1|" + idInscricao + "|" + expiraEm.getEpochSecond()
-                + "|" + UUID.randomUUID().toString().replace("-", "");
+        // Determinístico: ao reabrir a página, o participante vê o mesmo QR para este evento.
+        String payload = "v1|" + idInscricaoEvento + "|" + expiraEm.getEpochSecond() + "|EVENTO";
         String payloadCodificado = ENCODER.encodeToString(payload.getBytes(StandardCharsets.UTF_8));
         String assinatura = ENCODER.encodeToString(calcularHmac(payloadCodificado));
         return "v1." + payloadCodificado + "." + assinatura;
@@ -66,12 +65,12 @@ public class HmacCheckinQrTokenSigner implements CheckinQrTokenSignerPort {
                 throw new IllegalArgumentException();
             }
 
-            Long idInscricao = Long.valueOf(campos[1]);
+            Long idInscricaoEvento = Long.valueOf(campos[1]);
             Instant expiraEm = Instant.ofEpochSecond(Long.parseLong(campos[2]));
-            if (idInscricao <= 0 || !expiraEm.isAfter(Instant.now())) {
+            if (idInscricaoEvento <= 0 || !expiraEm.isAfter(Instant.now())) {
                 throw new RegraNegocioException("O QR Code é inválido ou expirou. Gere um novo código.");
             }
-            return new DadosToken(idInscricao, expiraEm);
+            return new DadosToken(idInscricaoEvento, expiraEm);
         } catch (RegraNegocioException e) {
             throw e;
         } catch (IllegalStateException e) {

@@ -15,13 +15,13 @@ public class SqliteInscricaoRepository extends SqliteRepositorySupport
         implements InscricaoRepositoryPort {
 
     private static final String INSERT = """
-            INSERT INTO inscricoes (atividade_id, usuario_id, cancelada)
-            VALUES (?, ?, ?)
+            INSERT INTO inscricoes (atividade_id, usuario_id, cancelada, inscricao_evento_id)
+            VALUES (?, ?, ?, ?)
             """;
 
     private static final String UPDATE = """
             UPDATE inscricoes
-            SET atividade_id = ?, usuario_id = ?, cancelada = ?
+            SET atividade_id = ?, usuario_id = ?, cancelada = ?, inscricao_evento_id = ?
             WHERE id = ?
             """;
 
@@ -55,7 +55,7 @@ public class SqliteInscricaoRepository extends SqliteRepositorySupport
             try (PreparedStatement statement =
                          connection.prepareStatement(UPDATE)) {
                 preencherParametros(statement, inscricao);
-                statement.setLong(4, inscricao.getId());
+                statement.setLong(5, inscricao.getId());
                 if (statement.executeUpdate() == 0) {
                     throw new SQLException(
                             "Não existe inscrição com id " + inscricao.getId()
@@ -90,6 +90,29 @@ public class SqliteInscricaoRepository extends SqliteRepositorySupport
     @Override
     public List<Inscricao> listarPorAtividade(Long idAtividade) {
         return listarPorCampo("atividade_id", idAtividade);
+    }
+
+    @Override
+    public List<Inscricao> listarPorInscricaoEvento(Long idInscricaoEvento) {
+        return listarPorCampo("inscricao_evento_id", idInscricaoEvento);
+    }
+
+    @Override
+    public Optional<Inscricao> buscarAtivaPorInscricaoEventoEAtividade(
+            Long idInscricaoEvento, Long idAtividade) {
+        if (idInscricaoEvento == null || idAtividade == null) return Optional.empty();
+        String sql = "SELECT * FROM inscricoes WHERE inscricao_evento_id=? "
+                + "AND atividade_id=? AND cancelada=0 ORDER BY id DESC LIMIT 1";
+        try (Connection connection = connectionFactory.abrirConexao();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, idInscricaoEvento);
+            statement.setLong(2, idAtividade);
+            try (ResultSet rs = statement.executeQuery()) {
+                return rs.next() ? Optional.of(mapearInscricao(rs)) : Optional.empty();
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Erro ao buscar atividade escolhida no SQLite.", e);
+        }
     }
 
     @Override
@@ -157,15 +180,23 @@ public class SqliteInscricaoRepository extends SqliteRepositorySupport
         statement.setLong(1, inscricao.getIdAtividade());
         statement.setLong(2, inscricao.getIdUsuario());
         statement.setInt(3, inscricao.isCancelada() ? 1 : 0);
+        if (inscricao.getIdInscricaoEvento() == null) {
+            statement.setNull(4, java.sql.Types.INTEGER);
+        } else {
+            statement.setLong(4, inscricao.getIdInscricaoEvento());
+        }
     }
 
     private Inscricao mapearInscricao(ResultSet resultSet)
             throws SQLException {
+        long idInscricaoEvento = resultSet.getLong("inscricao_evento_id");
+        Long idInscricaoEventoNulo = resultSet.wasNull() ? null : idInscricaoEvento;
         return new Inscricao(
                 resultSet.getLong("id"),
                 resultSet.getLong("atividade_id"),
                 resultSet.getLong("usuario_id"),
-                resultSet.getInt("cancelada") == 1
+                resultSet.getInt("cancelada") == 1,
+                idInscricaoEventoNulo
         );
     }
 }

@@ -19,10 +19,20 @@ public interface AlterarEventoPort {
         public final LocalDateTime fim;
         public final int capacidade;
         public final Usuario usuarioExecutor; // Usuário executor da operação
+        public final boolean certificado;
+        public final int frequenciaMinima;
+        public final boolean inscricoesAbertas;
 
         public ComandoAlterarEvento(Long idEvento, String titulo, String descricao,
                                     LocalDateTime inicio, LocalDateTime fim, int capacidade,
                                     Usuario usuarioExecutor) {
+            this(idEvento, titulo, descricao, inicio, fim, capacidade, usuarioExecutor, false, 75, false);
+        }
+
+        public ComandoAlterarEvento(Long idEvento, String titulo, String descricao,
+                                    LocalDateTime inicio, LocalDateTime fim, int capacidade,
+                                    Usuario usuarioExecutor, boolean certificado, int frequenciaMinima,
+                                    boolean inscricoesAbertas) {
             this.idEvento = idEvento;
             this.titulo = titulo;
             this.descricao = descricao;
@@ -30,6 +40,9 @@ public interface AlterarEventoPort {
             this.fim = fim;
             this.capacidade = capacidade;
             this.usuarioExecutor = usuarioExecutor;
+            this.certificado = certificado;
+            this.frequenciaMinima = frequenciaMinima;
+            this.inscricoesAbertas = inscricoesAbertas;
         }
     }
 

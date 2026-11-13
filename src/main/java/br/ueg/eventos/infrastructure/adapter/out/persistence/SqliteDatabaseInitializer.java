@@ -28,6 +28,11 @@ public class SqliteDatabaseInitializer {
                     3,
                     "Criacao da tabela de vinculos de organizadores",
                     "/db/migration/V3__criar_vinculos_organizadores.sql"
+            ),
+            new Migracao(
+                    4,
+                    "Reformulacao da inscricao em evento e escolha de atividades",
+                    "/db/migration/V4__reformular_inscricoes_evento.sql"
             )
     );
 

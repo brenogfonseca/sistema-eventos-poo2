@@ -71,6 +71,9 @@ public class EventoController {
         public String fim;
         public int capacidade;
         public Integer usuarioExecutorId; // Permite envio no corpo como alternativa ao header
+        public boolean certificado;
+        public int frequenciaMinima = 75;
+        public boolean inscricoesAbertas;
     }
 
     // DTO de resposta detalhada de Evento incluindo atributos do domínio
@@ -171,7 +174,10 @@ public class EventoController {
                     LocalDateTime.parse(request.inicio),
                     LocalDateTime.parse(request.fim),
                     request.capacidade,
-                    idCriador);
+                    idCriador,
+                    request.certificado,
+                    request.frequenciaMinima,
+                    request.inscricoesAbertas);
 
             Evento eventoCriado = criarEventoPort.executar(comando);
 
@@ -207,7 +213,10 @@ public class EventoController {
                     LocalDateTime.parse(request.inicio),
                     LocalDateTime.parse(request.fim),
                     request.capacidade,
-                    usuarioExecutor
+                    usuarioExecutor,
+                    request.certificado,
+                    request.frequenciaMinima,
+                    request.inscricoesAbertas
             );
 
             Evento eventoAtualizado = alterarEventoPort.executar(comando);
