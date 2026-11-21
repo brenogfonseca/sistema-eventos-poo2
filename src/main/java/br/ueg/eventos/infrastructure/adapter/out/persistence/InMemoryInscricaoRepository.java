@@ -27,7 +27,8 @@ public class InMemoryInscricaoRepository
                     novoId,
                     inscricao.getIdAtividade(),
                     inscricao.getIdUsuario(),
-                    inscricao.isCancelada()
+                    inscricao.isCancelada(),
+                    inscricao.getIdInscricaoEvento()
             );
 
             inscricoes.put(novoId, inscricaoSalva);
@@ -54,6 +55,25 @@ public class InMemoryInscricaoRepository
         }
 
         return resultado;
+    }
+
+    @Override
+    public List<Inscricao> listarPorInscricaoEvento(Long idInscricaoEvento) {
+        return inscricoes.values().stream()
+                .filter(i -> idInscricaoEvento != null
+                        && idInscricaoEvento.equals(i.getIdInscricaoEvento()))
+                .toList();
+    }
+
+    @Override
+    public Optional<Inscricao> buscarAtivaPorInscricaoEventoEAtividade(
+            Long idInscricaoEvento, Long idAtividade) {
+        return inscricoes.values().stream()
+                .filter(i -> idInscricaoEvento != null
+                        && idInscricaoEvento.equals(i.getIdInscricaoEvento())
+                        && idAtividade != null && idAtividade.equals(i.getIdAtividade())
+                        && i.estaAtiva())
+                .findFirst();
     }
 
     @Override

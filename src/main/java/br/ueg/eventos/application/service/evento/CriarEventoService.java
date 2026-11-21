@@ -40,6 +40,10 @@ public class CriarEventoService implements CriarEventoPort {
         }
 
         Evento evento = new Evento(comando.titulo, comando.descricao, periodo, comando.capacidade);
+        if (comando.certificado) {
+            evento.habilitarCertificado(comando.frequenciaMinima);
+        }
+        if (comando.inscricoesAbertas) evento.abrirInscricoes();
         Evento eventoSalvo = eventoRepository.salvar(evento);
 
         // Se foi informado o criador/organizador e o repositório estiver presente, registra o vínculo associativo

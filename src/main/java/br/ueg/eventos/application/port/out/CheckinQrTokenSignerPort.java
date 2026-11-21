@@ -2,24 +2,24 @@ package br.ueg.eventos.application.port.out;
 
 import java.time.Instant;
 
-/** Assina e valida tokens curtos usados nos QR Codes de check-in. */
+/** Assina e valida os tokens do QR Code da inscrição no evento. */
 public interface CheckinQrTokenSignerPort {
 
-    String emitir(Long idInscricao, Instant expiraEm);
+    String emitir(Long idInscricaoEvento, Instant expiraEm);
 
     DadosToken validar(String token);
 
     final class DadosToken {
-        private final Long idInscricao;
+        private final Long idInscricaoEvento;
         private final Instant expiraEm;
 
-        public DadosToken(Long idInscricao, Instant expiraEm) {
-            this.idInscricao = idInscricao;
+        public DadosToken(Long idInscricaoEvento, Instant expiraEm) {
+            this.idInscricaoEvento = idInscricaoEvento;
             this.expiraEm = expiraEm;
         }
 
-        public Long getIdInscricao() {
-            return idInscricao;
+        public Long getIdInscricaoEvento() {
+            return idInscricaoEvento;
         }
 
         public Instant getExpiraEm() {

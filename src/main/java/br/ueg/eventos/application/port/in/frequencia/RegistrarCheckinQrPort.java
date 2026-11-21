@@ -4,5 +4,5 @@ import br.ueg.eventos.domain.model.Frequencia;
 
 public interface RegistrarCheckinQrPort {
 
-    Frequencia executar(String token, Integer idResponsavel);
+    Frequencia executar(String token, Long idAtividade, String acao, Integer idResponsavel);
 }

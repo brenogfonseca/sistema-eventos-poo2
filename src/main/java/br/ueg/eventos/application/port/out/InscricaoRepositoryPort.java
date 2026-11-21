@@ -12,6 +12,11 @@ public interface InscricaoRepositoryPort {
 
     List<Inscricao> listarPorAtividade(Long idAtividade);
 
+    List<Inscricao> listarPorInscricaoEvento(Long idInscricaoEvento);
+
+    Optional<Inscricao> buscarAtivaPorInscricaoEventoEAtividade(
+            Long idInscricaoEvento, Long idAtividade);
+
     List<Inscricao> listarPorUsuario(Long idUsuario);
 
     void excluir(Long id);

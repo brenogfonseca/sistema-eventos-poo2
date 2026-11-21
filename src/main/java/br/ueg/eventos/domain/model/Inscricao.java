@@ -7,6 +7,7 @@ public class Inscricao {
     private Long id;
     private Long idAtividade;
     private Long idUsuario;
+    private Long idInscricaoEvento;
     private boolean cancelada;
 
     public Inscricao(Long idAtividade, Long idUsuario) {
@@ -16,6 +17,12 @@ public class Inscricao {
         this.idAtividade = idAtividade;
         this.idUsuario = idUsuario;
         this.cancelada = false;
+    }
+
+    public Inscricao(Long idAtividade, Long idUsuario, Long idInscricaoEvento) {
+        this(idAtividade, idUsuario);
+        validarId(idInscricaoEvento, "inscrição no evento");
+        this.idInscricaoEvento = idInscricaoEvento;
     }
 
     public Inscricao(
@@ -36,6 +43,15 @@ public class Inscricao {
         this.cancelada = cancelada;
     }
 
+    public Inscricao(Long id, Long idAtividade, Long idUsuario,
+                     boolean cancelada, Long idInscricaoEvento) {
+        this(id, idAtividade, idUsuario, cancelada);
+        if (idInscricaoEvento != null) {
+            validarId(idInscricaoEvento, "inscrição no evento");
+        }
+        this.idInscricaoEvento = idInscricaoEvento;
+    }
+
     public Long getId() {
         return id;
     }
@@ -46,6 +62,10 @@ public class Inscricao {
 
     public Long getIdUsuario() {
         return idUsuario;
+    }
+
+    public Long getIdInscricaoEvento() {
+        return idInscricaoEvento;
     }
 
     public boolean isCancelada() {

@@ -40,6 +40,7 @@ public class Evento {
         this.inscricoesAbertas = inscricoesAbertas;
         this.deletado = deletado;
         this.certificado = certificado;
+        validarFrequenciaMinima(frequenciaMinima);
         this.frequenciaMinima = frequenciaMinima;
     }
 
@@ -87,12 +88,19 @@ public class Evento {
     }
 
     public void habilitarCertificado(int frequenciaMinima) {
+        validarFrequenciaMinima(frequenciaMinima);
         this.certificado = true;
         this.frequenciaMinima = frequenciaMinima;
     }
     
     public void desabilitarCertificado() {
         this.certificado = false;
+    }
+
+    private void validarFrequenciaMinima(int frequenciaMinima) {
+        if (frequenciaMinima != 50 && frequenciaMinima != 75 && frequenciaMinima != 100) {
+            throw new RegraNegocioException("A frequência mínima para certificado deve ser 50%, 75% ou 100%.");
+        }
     }
     
     /**

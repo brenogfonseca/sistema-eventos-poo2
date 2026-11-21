@@ -4,7 +4,7 @@ import java.time.Instant;
 
 public interface GerarCheckinQrPort {
 
-    DadosCheckinQr executar(Long idInscricao, Integer idUsuario);
+    DadosCheckinQr executar(Long idInscricaoEvento, Integer idUsuario);
 
     final class DadosCheckinQr {
         private final String token;

@@ -1,290 +1,188 @@
 <?php
-/**
- * atividades.php — Módulo de Eventos: Listagem e criação de atividades
- * ─────────────────────────────────────────────────────────────────────────────
- * FLUXO DIDÁTICO:
- *
- * [Listagem]
- *   1. Recebe o ID do evento via query string: ?evento_id=1
- *   2. Chama chamar_api('GET', '/atividades/evento/{idEvento}') para listar.
- *
- * [Cadastro — apenas admin]
- *   3. Formulário coleta: nome, local (objeto), horaInicio, horaFim, data,
- *      tipo, vagas, tipoFrequencia.
- *   4. Ao submeter via POST, monta o JSON e chama POST /atividades.
- *      Campos mapeados ao AtividadeRequest.java do AtividadeController.
- *
- * [Inscrição — usuário logado]
- *   5. Botão "Inscrever-se" envia POST /inscricoes com { idAtividade, idUsuario }.
- *
- * Endpoints utilizados:
- *   GET  /atividades/evento/{idEvento}
- *   POST /atividades
- *   POST /inscricoes
- * ─────────────────────────────────────────────────────────────────────────────
- */
 require_once __DIR__ . '/api_service.php';
 iniciar_sessao();
 
-// Obtém o ID do evento da query string
 $idEvento = (int)($_GET['evento_id'] ?? 0);
+if ($idEvento <= 0) { header('Location: eventos.php'); exit; }
 
-if ($idEvento <= 0) {
-    header('Location: eventos.php');
-    exit;
-}
-
-$erro    = '';
+$idUsuario = id_usuario_logado();
+$erro = '';
 $sucesso = '';
+$resEvento = chamar_api('GET', "/eventos/{$idEvento}");
+$evento = $resEvento['erro'] ? null : ($resEvento['corpo'] ?? null);
+if (!$evento) { $erro = $resEvento['msg_erro'] ?? 'Evento não encontrado.'; }
+$organizadores = $evento['organizadoresIds'] ?? [];
+$podeGerenciar = eh_administrador() || ($idUsuario !== null && in_array($idUsuario, $organizadores));
 
-// ── Processa inscrição em atividade (POST do form de inscrição) ───────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'inscrever') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigir_login();
-
-    $idAtividade = (int)($_POST['id_atividade'] ?? 0);
-    $idUsuario   = id_usuario_logado();
-
-    // Monta o JSON para POST /inscricoes
-    // Conforme InscricaoController.InscricaoRequest: { idAtividade, idUsuario }
-    $dados = [
-        'idAtividade' => $idAtividade,
-        'idUsuario'   => $idUsuario,
-    ];
-
-    $resultado = chamar_api('POST', '/inscricoes', $dados);
-
-    if ($resultado['erro']) {
-        $erro = $resultado['msg_erro'] ?: 'Erro ao se inscrever.';
-    } else {
-        $sucesso = 'Inscrição realizada com sucesso! ✅';
+    $acao = $_POST['acao'] ?? '';
+    if ($acao === 'inscrever_evento') {
+        $resultado = chamar_api('POST', '/inscricoes/evento', ['idEvento' => $idEvento], headers_autenticados());
+        if ($resultado['erro']) $erro = $resultado['msg_erro'] ?: 'Não foi possível realizar a inscrição no evento.';
+        else $sucesso = 'Inscrição no evento realizada. Agora escolha as atividades que deseja acompanhar.';
+    } elseif ($acao === 'salvar_atividades') {
+        $idInscricaoEvento = (int)($_POST['id_inscricao_evento'] ?? 0);
+        $idsAtividades = array_values(array_unique(array_map('intval', $_POST['ids_atividades'] ?? [])));
+        $resultado = chamar_api('PUT', "/inscricoes/evento/{$idInscricaoEvento}/atividades",
+            ['idsAtividades' => $idsAtividades], headers_autenticados());
+        if ($resultado['erro']) $erro = $resultado['msg_erro'] ?: 'Não foi possível salvar sua agenda.';
+        else $sucesso = 'Sua agenda de atividades foi atualizada.';
+    } elseif ($acao === 'criar_atividade' && $podeGerenciar) {
+        $vagas = max(0, (int)($_POST['vagas'] ?? 0));
+        $dados = [
+            'nome' => trim($_POST['nome'] ?? ''),
+            'eventoId' => $idEvento,
+            'local' => ['nome' => trim($_POST['local_nome'] ?? '')],
+            'horaInicio' => ($_POST['hora_inicio'] ?? '') . ':00',
+            'horaFim' => ($_POST['hora_fim'] ?? '') . ':00',
+            'data' => $_POST['data'] ?? '',
+            'tipo' => trim($_POST['tipo'] ?? 'Palestra'),
+            'vagas' => $vagas,
+            'controlaVagas' => $vagas > 0,
+            'tipoFrequencia' => $_POST['tipoFrequencia'] ?? 'CHECKIN',
+            'trilha' => null,
+        ];
+        $resultado = chamar_api('POST', '/atividades', $dados, headers_autenticados());
+        if ($resultado['erro']) $erro = $resultado['msg_erro'] ?: 'Erro ao criar atividade.';
+        else $sucesso = 'Atividade criada com a política de frequência selecionada.';
     }
 }
 
-// ── Processa criação de atividade (admin) ─────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'criar_atividade') {
-    exigir_login();
-    if (!eh_administrador()) {
-        $erro = 'Apenas administradores podem criar atividades.';
-    } else {
-        $nome        = trim($_POST['nome']        ?? '');
-        $localNome   = trim($_POST['local_nome']  ?? '');
-        $horaInicio  = trim($_POST['hora_inicio'] ?? '');
-        $horaFim     = trim($_POST['hora_fim']    ?? '');
-        $data        = trim($_POST['data']        ?? '');
-        $tipo        = trim($_POST['tipo']        ?? 'Palestra');
-        $vagas       = (int)($_POST['vagas']      ?? 0);
-        $controlaVagas = $vagas > 0;
-
-        // AtividadeRequest.java usa LocalTime (HH:MM:SS) e LocalDate (yyyy-MM-dd)
-        $dados = [
-            'nome'          => $nome,
-            'eventoId'      => $idEvento,
-            'local'         => ['nome' => $localNome],  // Objeto Local com campo nome
-            'horaInicio'    => $horaInicio . ':00',      // "08:00:00"
-            'horaFim'       => $horaFim    . ':00',      // "09:00:00"
-            'data'          => $data,                    // "2026-10-01"
-            'tipo'          => $tipo,
-            'vagas'         => $vagas,
-            'controlaVagas' => $controlaVagas,
-            'tipoFrequencia'=> 'PRESENCIAL',             // Enum TipoFrequenciaEnum
-            'trilha'        => null,
-        ];
-
-        // Passa o header X-Usuario-Id pois o admin precisa estar autenticado
-        $resultado = chamar_api('POST', '/atividades', $dados, headers_autenticados());
-
-        if ($resultado['erro']) {
-            $erro = $resultado['msg_erro'] ?: 'Erro ao criar atividade.';
-        } else {
-            $sucesso = 'Atividade criada com sucesso! ✅';
+$atividadesResp = chamar_api('GET', "/atividades/evento/{$idEvento}");
+$atividades = $atividadesResp['erro'] ? [] : ($atividadesResp['corpo'] ?? []);
+$inscricaoEvento = null;
+$selecionadas = [];
+if ($idUsuario !== null) {
+    $inscricoesResp = chamar_api('GET', "/inscricoes/eventos/usuario/{$idUsuario}", null, headers_autenticados());
+    foreach (($inscricoesResp['corpo'] ?? []) as $item) {
+        if ((int)($item['idEvento'] ?? 0) === $idEvento) { $inscricaoEvento = $item; break; }
+    }
+    if ($inscricaoEvento && empty($inscricaoEvento['cancelada'])) {
+        $escolhidasResp = chamar_api('GET', "/inscricoes/evento/{$inscricaoEvento['id']}/atividades", null, headers_autenticados());
+        foreach (($escolhidasResp['corpo'] ?? []) as $item) {
+            if (empty($item['cancelada'])) $selecionadas[(int)$item['idAtividade']] = true;
         }
     }
 }
+$membroAtivo = $inscricaoEvento && empty($inscricaoEvento['cancelada']);
+$inscricoesAbertas = !empty($evento['inscricoesAbertas']);
+$qrEvento = $membroAtivo
+    ? chamar_api('GET', "/inscricoes/evento/{$inscricaoEvento['id']}/checkin-qr", null, headers_autenticados())
+    : ['erro' => true, 'msg_erro' => ''];
 
-// ── Busca lista de atividades do evento ──────────────────────────────────────
-$resAtividades = chamar_api('GET', "/atividades/evento/{$idEvento}");
-$atividades    = [];
-$erroListagem  = '';
-
-if ($resAtividades['erro']) {
-    $erroListagem = $resAtividades['msg_erro'];
-} else {
-    $atividades = $resAtividades['corpo'] ?? [];
-}
-
-// ── Monta o HTML ──────────────────────────────────────────────────────────────
 ob_start();
 ?>
-
 <div class="secao-cabecalho">
     <div>
         <a href="eventos.php" class="text-muted">← Voltar aos Eventos</a>
-        <h1 class="secao-titulo mt-sm">🗂️ Atividades do Evento #<?= $idEvento ?></h1>
-        <p class="secao-subtitulo">Selecione uma atividade e se inscreva</p>
+        <h1 class="secao-titulo mt-sm">Atividades de <?= htmlspecialchars($evento['titulo'] ?? "Evento #{$idEvento}") ?></h1>
+        <p class="secao-subtitulo">Inscreva-se no evento e escolha as atividades da sua agenda.</p>
     </div>
-    <?php if (eh_administrador()): ?>
-        <button
-            onclick="document.getElementById('form-nova-atividade').classList.toggle('d-none')"
-            class="btn btn-primario"
-            id="btn-toggle-criar-atividade">
-            + Nova Atividade
-        </button>
+    <?php if ($podeGerenciar): ?>
+        <button type="button" onclick="document.getElementById('form-nova-atividade').classList.toggle('d-none')" class="btn btn-primario">+ Nova Atividade</button>
     <?php endif; ?>
 </div>
 
-<!-- Alertas -->
-<?php if ($sucesso): ?>
-    <div class="alerta alerta-sucesso">✅ <?= htmlspecialchars($sucesso) ?></div>
-<?php endif; ?>
-<?php if ($erro): ?>
-    <div class="alerta alerta-erro">⚠️ <?= htmlspecialchars($erro) ?></div>
+<?php if ($sucesso): ?><div class="alerta alerta-sucesso">✅ <?= htmlspecialchars($sucesso) ?></div><?php endif; ?>
+<?php if ($erro): ?><div class="alerta alerta-erro">⚠️ <?= htmlspecialchars($erro) ?></div><?php endif; ?>
+
+<?php if (!$idUsuario): ?>
+    <div class="card"><p>Entre na sua conta para se inscrever e montar sua agenda.</p><a class="btn btn-primario" href="login.php">Entrar</a></div>
+<?php elseif (!$membroAtivo): ?>
+    <div class="card mb-md">
+        <p>Primeiro, faça sua inscrição no evento. Depois, as atividades disponíveis aparecerão para você escolher.</p>
+        <?php if ($inscricoesAbertas): ?>
+            <form method="POST"><input type="hidden" name="acao" value="inscrever_evento"><button class="btn btn-sucesso" type="submit">Inscrever-se no evento</button></form>
+        <?php else: ?><p class="text-muted">As inscrições para este evento estão fechadas.</p><?php endif; ?>
+    </div>
+<?php else: ?>
+    <div class="card mb-md">
+        <div class="alerta alerta-sucesso">Você está inscrito no evento. Marque as atividades que deseja incluir na sua agenda.</div>
+        <?php if (!$qrEvento['erro'] && !empty($qrEvento['corpo']['imagemBase64'])): ?>
+            <h3>Seu QR Code único para este evento</h3>
+            <img src="data:image/png;base64,<?= htmlspecialchars($qrEvento['corpo']['imagemBase64'], ENT_QUOTES, 'UTF-8') ?>" alt="QR Code da inscrição no evento" width="160" height="160">
+            <p class="text-muted">Mostre o mesmo QR ao organizador em cada atividade escolhida. Ele vale até o fim do evento e também fica em <a href="minhas_inscricoes.php">Minhas inscrições</a>.</p>
+        <?php elseif ($qrEvento['erro']): ?>
+            <p class="text-muted">QR Code indisponível: <?= htmlspecialchars($qrEvento['msg_erro'] ?? '') ?></p>
+        <?php endif; ?>
+    </div>
 <?php endif; ?>
 
-<!-- ── FORMULÁRIO DE CRIAÇÃO DE ATIVIDADE (admin, inicialmente oculto) ──────── -->
-<?php if (eh_administrador()): ?>
+<?php if ($podeGerenciar): ?>
 <div id="form-nova-atividade" class="card mb-md d-none">
-    <div class="card-titulo">➕ Nova Atividade</div>
-
-    <!--
-        Os campos mapeiam ao AtividadeRequest em AtividadeController.java:
-        { nome, eventoId, local{nome}, horaInicio (HH:MM:SS), horaFim, data, tipo, vagas, ... }
-    -->
-    <form method="POST" action="atividades.php?evento_id=<?= $idEvento ?>" id="form-criar-atividade">
+    <h2 class="card-titulo">Criar atividade</h2>
+    <form method="POST" action="atividades.php?evento_id=<?= $idEvento ?>">
         <input type="hidden" name="acao" value="criar_atividade">
-
         <div class="form-linha">
-            <div class="form-grupo">
-                <label for="nome">Nome da Atividade *</label>
-                <input type="text" id="nome" name="nome" placeholder="Ex: Palestra de OO" required>
-            </div>
-            <div class="form-grupo">
-                <label for="local_nome">Local</label>
-                <input type="text" id="local_nome" name="local_nome" placeholder="Ex: Sala A101">
-            </div>
+            <div class="form-grupo"><label>Nome *</label><input name="nome" required></div>
+            <div class="form-grupo"><label>Local</label><input name="local_nome"></div>
         </div>
-
         <div class="form-linha-3">
-            <div class="form-grupo">
-                <label for="data">Data *</label>
-                <input type="date" id="data" name="data" required>
-            </div>
-            <div class="form-grupo">
-                <label for="hora_inicio">Início *</label>
-                <input type="time" id="hora_inicio" name="hora_inicio" required>
-            </div>
-            <div class="form-grupo">
-                <label for="hora_fim">Fim *</label>
-                <input type="time" id="hora_fim" name="hora_fim" required>
-            </div>
+            <div class="form-grupo"><label>Data *</label><input type="date" name="data" required></div>
+            <div class="form-grupo"><label>Início *</label><input type="time" name="hora_inicio" required></div>
+            <div class="form-grupo"><label>Fim *</label><input type="time" name="hora_fim" required></div>
         </div>
-
         <div class="form-linha">
-            <div class="form-grupo">
-                <label for="tipo">Tipo</label>
-                <select id="tipo" name="tipo">
-                    <option value="Palestra">Palestra</option>
-                    <option value="Workshop">Workshop</option>
-                    <option value="Mesa Redonda">Mesa Redonda</option>
-                    <option value="Minicurso">Minicurso</option>
-                    <option value="Apresentação">Apresentação</option>
+            <div class="form-grupo"><label>Tipo</label><input name="tipo" value="Palestra"></div>
+            <div class="form-grupo"><label>Vagas (0 = ilimitado)</label><input type="number" name="vagas" min="0" value="0"></div>
+            <div class="form-grupo"><label>Critério de presença *</label>
+                <select name="tipoFrequencia" required>
+                    <option value="CHECKIN">Check-in único por QR</option>
+                    <option value="ENTRADA_SAIDA">Entrada e saída por QR</option>
+                    <option value="MANUAL">Validação manual pelo organizador</option>
                 </select>
             </div>
-            <div class="form-grupo">
-                <label for="vagas">Vagas (0 = ilimitado)</label>
-                <input type="number" id="vagas" name="vagas" min="0" value="0">
-            </div>
         </div>
-
-        <button type="submit" class="btn btn-sucesso" id="btn-salvar-atividade">
-            ✅ Salvar Atividade
-        </button>
+        <button type="submit" class="btn btn-sucesso">Salvar atividade</button>
     </form>
 </div>
 <?php endif; ?>
 
-<!-- ── TABELA DE ATIVIDADES ───────────────────────────────────────────────────── -->
-<?php if ($erroListagem): ?>
-    <div class="alerta alerta-erro">⚠️ <?= htmlspecialchars($erroListagem) ?></div>
+<?php if ($atividadesResp['erro']): ?>
+    <div class="alerta alerta-erro"><?= htmlspecialchars($atividadesResp['msg_erro']) ?></div>
 <?php elseif (empty($atividades)): ?>
-    <div class="card text-center" style="padding: 2rem;">
-        <p class="text-muted">Nenhuma atividade cadastrada para este evento.</p>
-    </div>
+    <div class="card"><p class="text-muted">Ainda não há atividades cadastradas para este evento.</p></div>
 <?php else: ?>
-    <div class="card">
-        <div class="tabela-responsiva">
-            <table class="tabela" id="tabela-atividades">
-                <thead>
-                    <tr>
-                        <th>Atividade</th>
-                        <th>Data</th>
-                        <th>Horário</th>
-                        <th>Tipo</th>
-                        <th>Local</th>
-                        <th>Vagas</th>
-                        <th>Ação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($atividades as $atividade):
-                        $idAtiv    = $atividade['id']         ?? '—';
-                        $nomeAtiv  = $atividade['nome']       ?? '—';
-                        $dataAtiv  = $atividade['data']       ?? '—';
-                        $hInicio   = $atividade['horaInicio'] ?? '—';
-                        $hFim      = $atividade['horaFim']    ?? '—';
-                        $tipoAtiv  = $atividade['tipo']       ?? '—';
-                        $localAtiv = $atividade['local']['nome'] ?? '—';
-                        $vagas     = $atividade['vagas']      ?? 0;
-                        $controlVagas = $atividade['controlaVagas'] ?? false;
-                    ?>
-                        <tr id="atividade-<?= (int)$idAtiv ?>">
-                            <td><strong><?= htmlspecialchars($nomeAtiv) ?></strong></td>
-                            <td><?= htmlspecialchars($dataAtiv) ?></td>
-                            <td><?= htmlspecialchars($hInicio) ?> – <?= htmlspecialchars($hFim) ?></td>
-                            <td><?= htmlspecialchars($tipoAtiv) ?></td>
-                            <td><?= htmlspecialchars($localAtiv) ?></td>
-                            <td>
-                                <?php if ($controlVagas): ?>
-                                    <?= (int)$vagas ?>
-                                <?php else: ?>
-                                    <span class="text-muted">Ilimitado</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <?php if (usuario_logado()): ?>
-                                    <!--
-                                        Formulário de inscrição: envia POST /inscricoes
-                                        com { idAtividade, idUsuario }
-                                    -->
-                                    <form method="POST"
-                                          action="atividades.php?evento_id=<?= $idEvento ?>"
-                                          id="form-inscrever-<?= (int)$idAtiv ?>"
-                                          style="display:inline;">
-                                        <input type="hidden" name="acao" value="inscrever">
-                                        <input type="hidden" name="id_atividade" value="<?= (int)$idAtiv ?>">
-                                        <button type="submit"
-                                                class="btn btn-sucesso"
-                                                id="btn-inscrever-<?= (int)$idAtiv ?>"
-                                                style="font-size:0.82rem; padding:0.3rem 0.8rem;">
-                                            Inscrever-se
-                                        </button>
-                                    </form>
-                                <?php else: ?>
-                                    <a href="login.php" class="btn btn-secundario"
-                                       style="font-size:0.82rem; padding:0.3rem 0.8rem;">
-                                        Login para inscrever
-                                    </a>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <?php if ($membroAtivo): ?>
+    <form method="POST" action="atividades.php?evento_id=<?= $idEvento ?>" class="card">
+        <input type="hidden" name="acao" value="salvar_atividades">
+        <input type="hidden" name="id_inscricao_evento" value="<?= (int)$inscricaoEvento['id'] ?>">
+        <div class="tabela-responsiva"><table class="tabela">
+            <thead><tr><th>Escolher</th><th>Atividade</th><th>Data</th><th>Horário</th><th>Presença</th><th>Vagas restantes</th></tr></thead>
+            <tbody><?php foreach ($atividades as $atividade):
+                $idAtividade = (int)($atividade['id'] ?? 0);
+                $limite = !empty($atividade['controlaVagas']) && (int)($atividade['vagas'] ?? 0) <= 0;
+                $tipoPresenca = $atividade['tipoFrequencia'] ?? 'CHECKIN';
+            ?>
+                <tr>
+                    <td><input type="checkbox" name="ids_atividades[]" value="<?= $idAtividade ?>" <?= isset($selecionadas[$idAtividade]) ? 'checked' : '' ?> <?= $limite && !isset($selecionadas[$idAtividade]) ? 'disabled' : '' ?> aria-label="Selecionar atividade"></td>
+                    <td><strong><?= htmlspecialchars($atividade['nome'] ?? 'Atividade') ?></strong></td>
+                    <td><?= htmlspecialchars($atividade['data'] ?? '—') ?></td>
+                    <td><?= htmlspecialchars($atividade['horaInicio'] ?? '—') ?>–<?= htmlspecialchars($atividade['horaFim'] ?? '—') ?></td>
+                    <td><?= htmlspecialchars($tipoPresenca) ?></td>
+                    <td><?= !empty($atividade['controlaVagas']) ? (int)($atividade['vagas'] ?? 0) : 'Ilimitadas' ?></td>
+                </tr>
+            <?php endforeach; ?></tbody>
+        </table></div>
+        <p class="text-muted mt-sm">O servidor rejeita atividades com horários sobrepostos e inscrições sem vagas.</p>
+        <button class="btn btn-primario mt-sm" type="submit">Salvar minha agenda</button>
+    </form>
+    <?php else: ?>
+    <div class="card"><div class="tabela-responsiva"><table class="tabela">
+        <thead><tr><th>Atividade</th><th>Data</th><th>Horário</th><th>Presença</th><th>Vagas</th></tr></thead>
+        <tbody><?php foreach ($atividades as $atividade): ?><tr>
+            <td><?= htmlspecialchars($atividade['nome'] ?? '—') ?></td><td><?= htmlspecialchars($atividade['data'] ?? '—') ?></td>
+            <td><?= htmlspecialchars($atividade['horaInicio'] ?? '—') ?>–<?= htmlspecialchars($atividade['horaFim'] ?? '—') ?></td>
+            <td><?= htmlspecialchars($atividade['tipoFrequencia'] ?? 'CHECKIN') ?></td>
+            <td><?= !empty($atividade['controlaVagas']) ? (int)($atividade['vagas'] ?? 0) : 'Ilimitadas' ?></td>
+        </tr><?php endforeach; ?></tbody>
+    </table></div></div>
+    <?php endif; ?>
 <?php endif; ?>
 
 <?php
-$conteudo    = ob_get_clean();
-$titulo      = 'Atividades do Evento';
+$conteudo = ob_get_clean();
+$titulo = 'Atividades do Evento';
 $paginaAtiva = 'eventos';
 include __DIR__ . '/layout.php';
