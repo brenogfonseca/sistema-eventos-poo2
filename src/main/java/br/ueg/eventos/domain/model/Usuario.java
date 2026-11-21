@@ -2,6 +2,7 @@ package br.ueg.eventos.domain.model;
 
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import java.util.regex.Pattern;
+import java.util.Locale;
 
 public class Usuario {
 
@@ -69,7 +70,7 @@ public class Usuario {
             throw new RegraNegocioException("O formato do e-mail é inválido.");
         }
 
-        this.email = novoEmail;
+        this.email = novoEmail.trim().toLowerCase(Locale.ROOT);
     }
 
     // Método auxiliar focado puramente em checar a força da senha digitada

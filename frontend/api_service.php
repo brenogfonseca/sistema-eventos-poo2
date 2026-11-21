@@ -20,7 +20,8 @@
 // ─── Configuração global da API ──────────────────────────────────────────────
 
 /** URL base da API Java. Altere a porta se necessário. */
-define('API_BASE_URL', 'http://localhost:8080');
+$apiBaseUrlConfigurada = getenv('EVENTOS_API_URL') ?: 'http://localhost:8080';
+define('API_BASE_URL', rtrim($apiBaseUrlConfigurada, '/'));
 
 // ─── Função principal: realiza qualquer requisição HTTP para a API ────────────
 
@@ -146,6 +147,11 @@ function chamar_api(string $metodo, string $endpoint, ?array $dados = null, arra
 function iniciar_sessao(): void
 {
     if (session_status() === PHP_SESSION_NONE) {
+        session_set_cookie_params([
+            'httponly' => true,
+            'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+            'samesite' => 'Lax',
+        ]);
         session_start();
     }
 }
@@ -159,7 +165,14 @@ function iniciar_sessao(): void
 function usuario_logado(): ?array
 {
     iniciar_sessao();
-    return $_SESSION['usuario'] ?? null;
+    $usuario = $_SESSION['usuario'] ?? null;
+    if (!$usuario || empty($usuario['token']) || empty($usuario['expiraEm'])) return null;
+    $expiraEm = strtotime($usuario['expiraEm']);
+    if ($expiraEm === false || $expiraEm <= time()) {
+        unset($_SESSION['usuario']);
+        return null;
+    }
+    return $usuario;
 }
 
 /**
@@ -181,10 +194,12 @@ function id_usuario_logado(): ?int
 function headers_autenticados(): array
 {
     $id = id_usuario_logado();
-    if ($id !== null) {
-        return ["X-Usuario-Id: {$id}"];
-    }
-    return [];
+    $usuario = usuario_logado();
+    if ($id === null || empty($usuario['token'])) return [];
+    return [
+        "Authorization: Bearer {$usuario['token']}",
+        "X-Usuario-Id: {$id}",
+    ];
 }
 
 /**

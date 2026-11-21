@@ -65,7 +65,16 @@ $titulo      = $titulo ?? 'Sistema de Eventos';
                     + Criar Evento
                 </a>
             </li>
+            <li>
+                <a href="relatorios.php"
+                   class="<?= $paginaAtiva === 'relatorios' ? 'ativo' : '' ?>">
+                    Relatórios
+                </a>
+            </li>
             <?php if (eh_administrador()): ?>
+                <li>
+                    <a href="locais.php" class="<?= $paginaAtiva === 'locais' ? 'ativo' : '' ?>">Locais</a>
+                </li>
                 <li>
                     <a href="usuarios.php"
                        class="<?= $paginaAtiva === 'usuarios' ? 'ativo' : '' ?>">
@@ -99,7 +108,7 @@ $titulo      = $titulo ?? 'Sistema de Eventos';
     </div>
 </main>
 
-<!-- ══ RODAPÉ ═══════════════════════════════════════════════════════════════ */
+<!-- ══ RODAPÉ ═══════════════════════════════════════════════════════════════ -->
 <footer class="rodape">
     Sistema de Gestão de Eventos · UEG POO2 &copy; <?= date('Y') ?>
 </footer>

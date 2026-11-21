@@ -1,115 +1,132 @@
-# Sistema de Eventos POO2
+# Sistema de Gestão de Eventos — POO2
 
-Este é o repositório base para o sistema de gestão de eventos desenvolvido para a disciplina de POO2. O projeto utiliza uma **Arquitetura Hexagonal** limpa e o micro-framework **Javalin** para as rotas web REST, mantendo a persistência em memória para facilitar os testes iniciais.
+Aplicação de gestão de eventos com API REST Java/Javalin, interface web PHP e cliente desktop independente JavaFX. Os dois clientes usam a mesma API e o mesmo banco PostgreSQL.
 
-## 🚀 Como rodar o projeto
+## Arquitetura
 
-### Pré-requisitos
-* Java 17 ou superior
-* Maven instalado na máquina (`mvn`)
-
-### 1. Compilar o Projeto
-Antes de rodar a primeira vez (ou sempre que fizer alterações estruturais), limpe os builds antigos e compile o projeto novamente:
-```bash
-mvn clean compile
+```mermaid
+flowchart LR
+    WEB[Web PHP] --> API[API REST Java / Javalin]
+    DESK[Desktop JavaFX] --> API
+    API --> CORE[Domínio e casos de uso]
+    CORE --> PORT[Portas de persistência]
+    PORT --> PG[(PostgreSQL)]
 ```
 
-### 2. Executar a Aplicação (Back-end)
-O projeto usa o micro-framework Javalin e o plugin `exec` do Maven para rodar a classe `Main` diretamente pelo terminal. Para subir a API REST na porta 8080, execute:
-```bash
-mvn compile exec:java -Dexec.mainClass="br.ueg.eventos.Main"
-```
-*(Ou se preferir, abra a classe `Main.java` na sua IDE e execute).*
+O núcleo segue arquitetura hexagonal: controllers traduzem HTTP para portas de entrada, serviços aplicam regras de negócio e adaptadores PostgreSQL persistem os dados. A aplicação desktop é um cliente JavaFX independente que consome a mesma API; ela não abre uma conexão JDBC própria.
 
----
+## Requisitos para executar
 
-## 💻 Como rodar o Front-end (PHP)
+- JDK 17
+- Maven 3.9 ou superior
+- Docker Desktop com Docker Compose
+- PHP 8 com extensões `curl` e `json` para a interface web
 
-O front-end do projeto é construído em **PHP nativo**, **HTML5** e **CSS3** (localizado na pasta `/frontend`). Ele consome a API REST Java em `http://localhost:8080`.
+## Configuração local
 
-### Pré-requisitos do Front
-* PHP 8.0+ instalado na máquina (com extensões `curl` e `json` habilitadas).
+1. Copie `.env.example` para `.env` na raiz do repositório.
+2. Preencha `EVENTOS_AUTH_SECRET` e `EVENTOS_QR_SECRET` com valores aleatórios diferentes, cada um com pelo menos 32 bytes.
+3. Preencha `EVENTOS_ADMIN_EMAIL` e `EVENTOS_ADMIN_PASSWORD`. A senha inicial precisa conter ao menos oito caracteres, maiúscula, minúscula, número e um dos símbolos `!@#&*`.
+4. Ajuste `EVENTOS_DB_USER` e `EVENTOS_DB_PASSWORD` se desejar trocar as credenciais locais do PostgreSQL.
 
-### 1. Iniciar o servidor embutido do PHP
-Em um novo terminal, entre na pasta do front-end e inicie o servidor na porta 3000:
-```bash
-cd frontend
-php -S localhost:3000
-```
-
-### 2. Acessar no Navegador
-Abra seu navegador e acesse:
-```
-http://localhost:3000
-```
-
----
-
-## ⚡ Inicialização Rápida (Script Windows)
-
-Para facilitar, você pode iniciar tanto o back-end quanto o front-end simultaneamente com apenas dois cliques no arquivo:
-```
-iniciar_sistema.bat
-```
-Esse script abre automaticamente a API Java na porta 8080, o servidor PHP na porta 3000 e abre a página no navegador.
-
-### Check-in por QR Code
-
-O QR Code aparece nas inscrições ativas de atividades configuradas com frequência `CHECKIN`. Cada código contém um token assinado, válido por 15 minutos. Para gerar outro, atualize a página **Minhas Inscrições**. O leitor fica no menu **Leitor QR** e registra a presença somente para um administrador ou organizador do evento. Os vínculos de organizador são persistidos pela migração `V3` do SQLite.
-
-Antes de iniciar o sistema, configure uma chave secreta aleatória com pelo menos 32 bytes. No PowerShell, você pode gerar e manter uma chave no perfil do Windows com:
+Exemplo para gerar dois segredos no PowerShell:
 
 ```powershell
-$bytesQr = New-Object byte[] 32
-$rngQr = [Security.Cryptography.RandomNumberGenerator]::Create()
-$rngQr.GetBytes($bytesQr)
-$chaveQr = [Convert]::ToBase64String($bytesQr)
-$rngQr.Dispose()
-[Environment]::SetEnvironmentVariable('EVENTOS_QR_SECRET', $chaveQr, 'User')
+$bytes = New-Object byte[] 48
+$rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($bytes)
+[Convert]::ToBase64String($bytes)
+$rng.Dispose()
 ```
 
-Depois, abra um novo terminal e execute `iniciar_sistema.bat`. A mesma chave precisa continuar configurada para que tokens já emitidos possam ser validados. O leitor pela câmera requer um navegador compatível com `BarcodeDetector` e permissão para usar a câmera; se não estiver disponível, é possível colar o token manualmente.
+Gere o valor duas vezes e coloque os resultados em `EVENTOS_AUTH_SECRET` e `EVENTOS_QR_SECRET`. O `.env` é ignorado pelo Git. Não envie senhas ou chaves para o repositório.
 
-Fluxo esperado: crie uma atividade com `tipoFrequencia: "CHECKIN"`, faça uma inscrição ativa, entre em **Minhas Inscrições** para exibir o QR e leia esse código pela página **Leitor QR** usando a conta de administrador ou de um organizador vinculado ao evento.
+## PostgreSQL
 
----
+Com o Docker Desktop aberto, execute na raiz do projeto:
 
-## 👤 Usuário Administrador Inicial (Para Testes)
-
-Para testes imediatos e navegação com privilégios de administrador sem precisar cadastrar e promover manualmente, o sistema já inicia com um usuário administrador pré-carregado em memória:
-
-| Campo | Valor de Teste |
-|---|---|
-| **Nome** | Administrador |
-| **E-mail** | `admin@evento.com` |
-| **Senha** | `Admin@123` |
-| **Perfil** | `ADMINISTRADOR` |
-| **ID** | `1` |
-
-> ℹ️ **Nota:** Esse usuário foi configurado provisoriamente em `InMemoryUsuarioRepository.java` apenas para testes em ambiente de desenvolvimento.
-
----
-
-## 🛠️ Como testar as Rotas da API via Terminal (cURL)
-
-Com a aplicação Java rodando, você também pode testar os endpoints diretamente via terminal:
-
-### Criar um novo Evento (POST)
-```bash
-curl -X POST http://localhost:8080/eventos \
-     -H "Content-Type: application/json" \
-     -d '{
-           "titulo": "Feira de Computação 2026",
-           "descricao": "Maior evento de tecnologia do semestre",
-           "inicio": "2026-10-10T08:00:00",
-           "fim": "2026-10-12T18:00:00",
-           "capacidade": 200
-         }'
+```powershell
+docker compose up -d --wait postgres
 ```
-> **Retorno Esperado:** Status `201 CREATED` com o JSON do evento criado.
 
-### Listar todos os Eventos (GET)
-```bash
-curl http://localhost:8080/eventos
+O banco começa vazio. Ao iniciar a API, as migrações versionadas em `src/main/resources/db/migration/postgresql` criam o esquema automaticamente. O volume `eventos_postgres_data` mantém os dados quando o container é parado ou recriado.
+
+Para verificar o container:
+
+```powershell
+docker compose ps
+docker compose logs postgres
 ```
-> **Retorno Esperado:** Status `200 OK` com a lista JSON de eventos. Como a persistência atual é em memória, reiniciar a aplicação reiniciará os dados.
+
+## Executar a API
+
+Na raiz do repositório:
+
+```powershell
+mvn clean compile
+mvn exec:java
+```
+
+A API fica em `http://localhost:8080`. Se as variáveis do administrador inicial forem configuradas, ele é criado somente quando ainda não existe uma conta `ADMINISTRADOR`. Usuários novos são cadastrados como `USUARIO` e podem criar seus próprios eventos.
+
+Para executar os testes unitários definidos em `src/test/java`:
+
+```powershell
+mvn test
+```
+
+## Executar a interface web
+
+Em outro terminal:
+
+```powershell
+cd frontend
+php -S 127.0.0.1:3000
+```
+
+Abra `http://127.0.0.1:3000`. O PHP conversa com a API pelo cURL. Por padrão a URL é `http://localhost:8080`; para alterá-la, defina `EVENTOS_API_URL` no ambiente do processo PHP.
+
+## Executar o cliente desktop
+
+Com a API e o PostgreSQL em execução, rode na raiz do projeto:
+
+```powershell
+mvn javafx:run
+```
+
+O cliente JavaFX oferece login/cadastro, busca de eventos e programação, inscrição e seleção de atividades, exibição do QR único, leitor de imagem QR, registro de frequência, avaliações, gestão de programação, locais e exportação CSV. O endereço da API pode ser definido por `EVENTOS_API_URL` no ambiente ou no `.env`.
+
+## Fluxos principais
+
+1. O participante cria uma conta, abre um evento publicado e se inscreve no evento.
+2. Depois da inscrição, escolhe as atividades. A API impede sobreposição de horário e controla as vagas simultaneamente no banco.
+3. A inscrição do evento emite um QR assinado que vale para as atividades escolhidas até o fim do evento, conforme o fuso configurado.
+4. O organizador seleciona a atividade no leitor e registra check-in único, entrada/saída ou validação manual, conforme a política definida para aquela atividade. Cada registro inclui horário, origem e responsável.
+5. O evento pode exigir 50%, 75% ou 100% de presença. A proporção considera os minutos das atividades escolhidas e validadas. Depois do fim do evento, participantes elegíveis podem baixar o certificado PDF; organizadores também podem emitir certificados de palestrante e apresentador com a carga horária das atividades vinculadas.
+6. Organizadores publicam avaliações textuais, de escolha única ou escala numérica. A API só aceita resposta de participante inscrito com frequência validada e protege respostas duplicadas.
+7. Administradores e organizadores exportam relatórios CSV de inscrições e frequência. Resultados de avaliações também podem ser exportados; questionários anônimos não exibem identificação individual.
+
+## API
+
+- `POST /usuarios` e `POST /auth/login`: cadastro e sessão bearer.
+- `/eventos` e `/atividades`: eventos, programação, modalidades, critérios de frequência e vagas.
+- `/inscricoes/evento`: inscrição no evento, escolha de atividades, cancelamento, QR e frequência para certificado.
+- `POST /frequencias/checkin-qr`: registro de presença com QR, atividade, ação e usuário organizador autenticado.
+- `/questionarios`, `/questoes` e `/respostas`: configuração e resposta às avaliações.
+- `/locais` e `/atividades/{id}/pessoas`: locais e pessoas vinculadas à programação.
+- `/relatorios/eventos/{id}/inscricoes.csv` e `/frequencias.csv`: exportações administrativas.
+- `GET /inscricoes/evento/{id}/certificado.pdf`: certificado pessoal, após o encerramento e quando elegível.
+- `GET /eventos/{idEvento}/pessoas-programacao/{idPessoa}/certificado.pdf?papel=PALESTRANTE`: certificado de palestrante ou apresentador após o encerramento, por um organizador do evento.
+
+As rotas privadas exigem `Authorization: Bearer <token>` e `X-Usuario-Id` correspondente à identidade assinada no token. As autorizações de organizador são validadas na API; controles da tela não substituem as verificações do servidor.
+
+## Banco e evolução
+
+As migrações PostgreSQL são aplicadas em ordem e registradas em `schema_migrations`. Não edite migrações que já tenham sido executadas: crie uma nova versão. A camada de persistência de execução é PostgreSQL; classes SQLite antigas permanecem no histórico do código, mas não são ligadas pelo `Main`.
+
+## Documentação do projeto
+
+- [Arquitetura e decisões](docs/arquitetura-e-decisoes.md)
+- [Esquema e migrações](docs/modelo-de-dados.md)
+- [Rotas da API e exemplos](docs/api.md)
+- [Rastreabilidade e validação dos requisitos](docs/rastreabilidade.md)

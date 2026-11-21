@@ -17,6 +17,10 @@ public class Evento {
     private boolean deletado;
     private boolean certificado;
     private int frequenciaMinima;
+    private String modalidade;
+    private String status;
+    private String fusoHorario;
+    private java.time.LocalDateTime prazoCancelamento;
 
     public Evento(String titulo, String descricao, Periodo periodo, int capacidadeMaxima) {
         setTitulo(titulo);
@@ -27,6 +31,10 @@ public class Evento {
         this.deletado = false;
         this.certificado = false;
         this.frequenciaMinima = 75; // Default 75%
+        this.modalidade = "PRESENCIAL";
+        this.status = "RASCUNHO";
+        this.fusoHorario = "America/Sao_Paulo";
+        this.prazoCancelamento = null;
     }
     
     // Construtor para reconstrução via repositório
@@ -42,6 +50,26 @@ public class Evento {
         this.certificado = certificado;
         validarFrequenciaMinima(frequenciaMinima);
         this.frequenciaMinima = frequenciaMinima;
+        this.modalidade = "PRESENCIAL";
+        this.status = "PUBLICADO";
+        this.fusoHorario = "America/Sao_Paulo";
+    }
+
+    public Evento(Long id, String titulo, String descricao, Periodo periodo, int capacidadeMaxima,
+                  boolean inscricoesAbertas, boolean deletado, boolean certificado, int frequenciaMinima,
+                  String modalidade, String status, String fusoHorario) {
+        this(id, titulo, descricao, periodo, capacidadeMaxima, inscricoesAbertas, deletado,
+                certificado, frequenciaMinima, modalidade, status, fusoHorario, null);
+    }
+
+    public Evento(Long id, String titulo, String descricao, Periodo periodo, int capacidadeMaxima,
+                  boolean inscricoesAbertas, boolean deletado, boolean certificado, int frequenciaMinima,
+                  String modalidade, String status, String fusoHorario,
+                  java.time.LocalDateTime prazoCancelamento) {
+        this(id, titulo, descricao, periodo, capacidadeMaxima, inscricoesAbertas,
+                deletado, certificado, frequenciaMinima);
+        configurarPublicacao(modalidade, status, fusoHorario);
+        configurarPrazoCancelamento(prazoCancelamento);
     }
 
     // Regras de negócio protegidas nos "Setters" privados (ou públicos quando fizer sentido)
@@ -95,6 +123,40 @@ public class Evento {
     
     public void desabilitarCertificado() {
         this.certificado = false;
+    }
+
+    public void configurarPublicacao(String modalidade, String status, String fusoHorario) {
+        String modalidadeNormalizada = modalidade == null || modalidade.isBlank()
+                ? "PRESENCIAL" : modalidade.trim().toUpperCase();
+        String statusNormalizado = status == null || status.isBlank()
+                ? "RASCUNHO" : status.trim().toUpperCase();
+        if (!java.util.Set.of("PRESENCIAL", "ONLINE", "HIBRIDO").contains(modalidadeNormalizada)) {
+            throw new RegraNegocioException("Modalidade deve ser PRESENCIAL, ONLINE ou HIBRIDO.");
+        }
+        if (!java.util.Set.of("RASCUNHO", "PUBLICADO", "CANCELADO", "ENCERRADO").contains(statusNormalizado)) {
+            throw new RegraNegocioException("Estado deve ser RASCUNHO, PUBLICADO, CANCELADO ou ENCERRADO.");
+        }
+        if (fusoHorario == null || fusoHorario.isBlank()) {
+            throw new RegraNegocioException("O fuso horário do evento é obrigatório.");
+        }
+        try {
+            java.time.ZoneId.of(fusoHorario.trim());
+        } catch (java.time.DateTimeException e) {
+            throw new RegraNegocioException("Informe um fuso horário IANA válido.");
+        }
+        this.modalidade = modalidadeNormalizada;
+        this.status = statusNormalizado;
+        this.fusoHorario = fusoHorario.trim();
+        if (!"PUBLICADO".equals(statusNormalizado)) {
+            fecharInscricoes();
+        }
+    }
+
+    public void configurarPrazoCancelamento(java.time.LocalDateTime prazo) {
+        if (prazo != null && prazo.isAfter(periodo.getInicio())) {
+            throw new RegraNegocioException("O prazo de cancelamento deve ocorrer até o início do evento.");
+        }
+        this.prazoCancelamento = prazo;
     }
 
     private void validarFrequenciaMinima(int frequenciaMinima) {
@@ -174,4 +236,14 @@ public class Evento {
     public int getFrequenciaMinima() {
         return frequenciaMinima;
     }
+
+    public String getModalidade() { return modalidade; }
+
+    public String getStatus() { return status; }
+
+    public String getFusoHorario() { return fusoHorario; }
+
+    public java.time.LocalDateTime getPrazoCancelamento() { return prazoCancelamento; }
+
+    public boolean isPublicado() { return "PUBLICADO".equals(status); }
 }

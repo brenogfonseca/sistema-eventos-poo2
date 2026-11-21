@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. Captura os campos do formulário HTML
     $nome  = trim($_POST['nome']  ?? '');
     $email = trim($_POST['email'] ?? '');
-    $senha = trim($_POST['senha'] ?? '');
+    $senha = (string)($_POST['senha'] ?? '');
 
     // Perfil é sempre USUARIO: qualquer pessoa que se cadastra é um USUARIO.
     // VISITANTE é o estado anônimo (sem conta). Não é escolhido no cadastro.
@@ -57,8 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($nome) || empty($email) || empty($senha)) {
         $erro = 'Todos os campos são obrigatórios.';
 
-    } elseif (strlen($senha) < 6) {
-        $erro = 'A senha deve ter pelo menos 6 caracteres.';
+    } elseif (!preg_match('/^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#&*]).{8,}$/', $senha)) {
+        $erro = 'A senha deve ter 8 caracteres, incluindo maiúscula, minúscula, número e um dos símbolos ! @ # & *.';
 
     } else {
         // 3. Monta o array de dados a ser enviado como JSON para a API
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-grupo">
-                <label for="senha">Senha (mín. 6 caracteres)</label>
+                    <label for="senha">Senha (mín. 8 caracteres)</label>
                 <input
                     type="password"
                     id="senha"

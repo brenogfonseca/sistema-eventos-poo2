@@ -15,6 +15,10 @@ public interface CriarEventoPort {
         public final boolean certificado;
         public final int frequenciaMinima;
         public final boolean inscricoesAbertas;
+        public final String modalidade;
+        public final String status;
+        public final String fusoHorario;
+        public final LocalDateTime prazoCancelamento;
 
         // Construtor original para compatibilidade
         public ComandoCriarEvento(String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim, int capacidade) {
@@ -29,6 +33,21 @@ public interface CriarEventoPort {
         public ComandoCriarEvento(String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim,
                                   int capacidade, Integer idUsuarioCriador, boolean certificado, int frequenciaMinima,
                                   boolean inscricoesAbertas) {
+            this(titulo, descricao, inicio, fim, capacidade, idUsuarioCriador, certificado,
+                    frequenciaMinima, inscricoesAbertas, "PRESENCIAL", "PUBLICADO", "America/Sao_Paulo");
+        }
+
+        public ComandoCriarEvento(String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim,
+                                  int capacidade, Integer idUsuarioCriador, boolean certificado, int frequenciaMinima,
+                                  boolean inscricoesAbertas, String modalidade, String status, String fusoHorario) {
+            this(titulo, descricao, inicio, fim, capacidade, idUsuarioCriador, certificado, frequenciaMinima,
+                    inscricoesAbertas, modalidade, status, fusoHorario, null);
+        }
+
+        public ComandoCriarEvento(String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim,
+                                  int capacidade, Integer idUsuarioCriador, boolean certificado, int frequenciaMinima,
+                                  boolean inscricoesAbertas, String modalidade, String status, String fusoHorario,
+                                  LocalDateTime prazoCancelamento) {
             this.titulo = titulo;
             this.descricao = descricao;
             this.inicio = inicio;
@@ -38,6 +57,10 @@ public interface CriarEventoPort {
             this.certificado = certificado;
             this.frequenciaMinima = frequenciaMinima;
             this.inscricoesAbertas = inscricoesAbertas;
+            this.modalidade = modalidade;
+            this.status = status;
+            this.fusoHorario = fusoHorario;
+            this.prazoCancelamento = prazoCancelamento;
         }
     }
 

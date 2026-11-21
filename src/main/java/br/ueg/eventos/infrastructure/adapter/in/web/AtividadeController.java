@@ -21,19 +21,22 @@ public class AtividadeController {
     private final ExcluirAtividadePort excluirAtividadePort;
     private final BuscarAtividadePorIdPort buscarAtividadePorIdPort;
     private final ListarAtividadesPorEventoPort listarAtividadesPorEventoPort;
+    private final EventoAuthorization autorizacao;
 
     public AtividadeController(
             CadastrarAtividadePort cadastrarAtividadePort,
             AtualizarAtividadePort atualizarAtividadePort,
             ExcluirAtividadePort excluirAtividadePort,
             BuscarAtividadePorIdPort buscarAtividadePorIdPort,
-            ListarAtividadesPorEventoPort listarAtividadesPorEventoPort) {
+            ListarAtividadesPorEventoPort listarAtividadesPorEventoPort,
+            EventoAuthorization autorizacao) {
 
         this.cadastrarAtividadePort = cadastrarAtividadePort;
         this.atualizarAtividadePort = atualizarAtividadePort;
         this.excluirAtividadePort = excluirAtividadePort;
         this.buscarAtividadePorIdPort = buscarAtividadePorIdPort;
         this.listarAtividadesPorEventoPort = listarAtividadesPorEventoPort;
+        this.autorizacao = autorizacao;
     }
 
     public void registerRoutes(Javalin app) {
@@ -47,6 +50,7 @@ public class AtividadeController {
 
     static class AtividadeRequest {
         public String nome;
+        public String descricao;
         public Long eventoId;
         public Local local;
         public String horaInicio;
@@ -60,7 +64,7 @@ public class AtividadeController {
     }
 
     private Atividade converter(AtividadeRequest request, Long id) {
-        return new Atividade(
+        Atividade atividade = new Atividade(
                 id,
                 request.nome,
                 request.eventoId,
@@ -74,6 +78,8 @@ public class AtividadeController {
                 request.tipoFrequencia,
                 request.trilha
         );
+        atividade.alterarDescricao(request.descricao);
+        return atividade;
     }
 
     private void cadastrar(Context ctx) {
@@ -145,10 +151,14 @@ public class AtividadeController {
         try {
             Long id = Long.parseLong(ctx.pathParam("id"));
 
+            autorizacao.exigirGerenciadorDaAtividade(ctx, id);
+
             excluirAtividadePort.executar(id);
 
             ctx.status(HttpStatus.NO_CONTENT);
 
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (RegraNegocioException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
         } catch (NumberFormatException e) {
@@ -166,9 +176,12 @@ public class AtividadeController {
 
             Atividade atividade =
                     buscarAtividadePorIdPort.executar(id);
+            autorizacao.exigirLeituraDaProgramacao(ctx, atividade.getEventoId());
 
             ctx.status(HttpStatus.OK).json(atividade);
 
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (RegraNegocioException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
         } catch (NumberFormatException e) {
@@ -185,9 +198,13 @@ public class AtividadeController {
             Long idEvento =
                     Long.parseLong(ctx.pathParam("idEvento"));
 
+            autorizacao.exigirLeituraDaProgramacao(ctx, idEvento);
+
             ctx.status(HttpStatus.OK)
                     .json(listarAtividadesPorEventoPort.executar(idEvento));
 
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (RegraNegocioException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
         } catch (NumberFormatException e) {

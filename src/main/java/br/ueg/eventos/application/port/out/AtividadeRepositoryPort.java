@@ -13,4 +13,20 @@ public interface AtividadeRepositoryPort {
     List<Atividade> listarPorEvento(Long idEvento);
 
     void excluir(Long id);
+
+    /** Atomically consumes one remaining spot when capacity is limited. */
+    default boolean consumirVaga(Long id) {
+        Atividade atividade = buscarPorId(id).orElseThrow();
+        if (!atividade.isControlaVagas()) return true;
+        atividade.registrarInscricao();
+        salvar(atividade);
+        return true;
+    }
+
+    /** Returns one spot after an active activity enrollment is cancelled. */
+    default void liberarVaga(Long id) {
+        Atividade atividade = buscarPorId(id).orElseThrow();
+        atividade.cancelarInscricao();
+        salvar(atividade);
+    }
 }

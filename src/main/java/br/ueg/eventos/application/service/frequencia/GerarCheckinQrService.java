@@ -51,7 +51,7 @@ public class GerarCheckinQrService implements GerarCheckinQrPort {
         Evento evento = eventoRepository.buscarPorId(inscricao.getIdEvento())
                 .orElseThrow(() -> new RegraNegocioException("Evento da inscrição não encontrado."));
         Instant expiraEm = evento.getPeriodo().getFim()
-                .atZone(ZoneId.systemDefault()).toInstant();
+                .atZone(ZoneId.of(evento.getFusoHorario())).toInstant();
         if (!expiraEm.isAfter(clock.instant())) {
             throw new RegraNegocioException("O evento já terminou; o QR Code não pode mais ser emitido.");
         }

@@ -61,6 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
     $certificado = isset($_POST['certificado']);
     $frequenciaMinima = (int)($_POST['frequenciaMinima'] ?? $eventoAtual['frequenciaMinima'] ?? 75);
     $inscricoesAbertas = ($_POST['inscricoesAbertas'] ?? '0') === '1';
+    $modalidade = $_POST['modalidade'] ?? ($eventoAtual['modalidade'] ?? 'PRESENCIAL');
+    $status = $_POST['status'] ?? ($eventoAtual['status'] ?? 'PUBLICADO');
+    $fusoHorario = trim($_POST['fusoHorario'] ?? ($eventoAtual['fusoHorario'] ?? 'America/Sao_Paulo'));
+    $prazoCancelamento = trim($_POST['prazoCancelamento'] ?? '');
 
     if (empty($titulo) || empty($dataInicio) || empty($dataFim)) {
         $erro = 'Título, data de início e data de fim são obrigatórios.';
@@ -82,6 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
             'frequenciaMinima'  => $frequenciaMinima,
             'inscricoesAbertas' => $inscricoesAbertas,
             'usuarioExecutorId' => $idUsuarioLogado, // Enviado no corpo JSON para a API Java
+            'modalidade'        => $modalidade,
+            'status'            => $status,
+            'fusoHorario'       => $fusoHorario,
+            'prazoCancelamento' => $prazoCancelamento !== '' ? $prazoCancelamento : null,
         ];
 
         // Dispara PUT /eventos/{id} com header X-Usuario-Id
@@ -100,6 +108,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
 $valTitulo = $_POST['titulo'] ?? $eventoAtual['titulo'] ?? '';
 $valDescricao = $_POST['descricao'] ?? $eventoAtual['descricao'] ?? '';
 $valCapacidade = $_POST['capacidade'] ?? $eventoAtual['capacidade'] ?? '';
+$valModalidade = $_POST['modalidade'] ?? $eventoAtual['modalidade'] ?? 'PRESENCIAL';
+$valStatus = $_POST['status'] ?? $eventoAtual['status'] ?? 'PUBLICADO';
+$valFusoHorario = $_POST['fusoHorario'] ?? $eventoAtual['fusoHorario'] ?? 'America/Sao_Paulo';
+$valPrazoCancelamento = $_POST['prazoCancelamento'] ?? (!empty($eventoAtual['prazoCancelamento']) ? date('Y-m-d\TH:i', strtotime($eventoAtual['prazoCancelamento'])) : '');
 $valCertificado = $_SERVER['REQUEST_METHOD'] === 'POST'
     ? isset($_POST['certificado'])
     : !empty($eventoAtual['certificado']);
@@ -145,6 +157,34 @@ ob_start();
                 value="<?= htmlspecialchars($valTitulo) ?>"
                 required
             >
+        </div>
+
+        <div class="form-linha">
+            <div class="form-grupo">
+                <label for="modalidade">Modalidade</label>
+                <select id="modalidade" name="modalidade">
+                    <?php foreach (['PRESENCIAL', 'ONLINE', 'HIBRIDO'] as $opcao): ?>
+                        <option value="<?= $opcao ?>" <?= $valModalidade === $opcao ? 'selected' : '' ?>><?= $opcao ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-grupo">
+                <label for="status">Publicação</label>
+                <select id="status" name="status">
+                    <?php foreach (['PUBLICADO' => 'Publicado', 'RASCUNHO' => 'Rascunho', 'CANCELADO' => 'Cancelado', 'ENCERRADO' => 'Encerrado'] as $valor => $rotulo): ?>
+                        <option value="<?= $valor ?>" <?= $valStatus === $valor ? 'selected' : '' ?>><?= $rotulo ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <div class="form-grupo">
+            <label for="fusoHorario">Fuso horário</label>
+            <input id="fusoHorario" name="fusoHorario" value="<?= htmlspecialchars($valFusoHorario) ?>" required>
+        </div>
+        <div class="form-grupo">
+            <label for="prazoCancelamento">Prazo limite para cancelamento da inscrição</label>
+            <input type="datetime-local" id="prazoCancelamento" name="prazoCancelamento" value="<?= htmlspecialchars($valPrazoCancelamento) ?>">
+            <small class="text-muted">Se ficar vazio, o cancelamento é permitido até o início do evento.</small>
         </div>
 
         <div class="form-grupo">

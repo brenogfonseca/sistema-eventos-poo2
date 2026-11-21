@@ -28,8 +28,6 @@ import java.util.List;
  */
 public class EventoController {
 
-    private static final String HEADER_EXECUTOR_ID = "X-Usuario-Id";
-
     private final CriarEventoPort criarEventoPort;
     private final ListarEventosPort listarEventosPort;
     private final AlterarEventoPort alterarEventoPort;
@@ -70,10 +68,14 @@ public class EventoController {
         public String inicio;
         public String fim;
         public int capacidade;
-        public Integer usuarioExecutorId; // Permite envio no corpo como alternativa ao header
+        public Integer usuarioExecutorId; // Legado: ignorado; a identidade vem do token bearer.
         public boolean certificado;
         public int frequenciaMinima = 75;
         public boolean inscricoesAbertas;
+        public String modalidade = "PRESENCIAL";
+        public String status = "PUBLICADO";
+        public String fusoHorario = "America/Sao_Paulo";
+        public String prazoCancelamento;
     }
 
     // DTO de resposta detalhada de Evento incluindo atributos do domínio
@@ -87,6 +89,10 @@ public class EventoController {
         public boolean inscricoesAbertas;
         public boolean certificado;
         public int frequenciaMinima;
+        public String modalidade;
+        public String status;
+        public String fusoHorario;
+        public String prazoCancelamento;
         public List<Integer> organizadoresIds; // Lista de IDs de organizadores
 
         public EventoDetalheResponse(Evento evento, List<Integer> organizadoresIds) {
@@ -99,6 +105,10 @@ public class EventoController {
             this.inscricoesAbertas = evento.isInscricoesAbertas();
             this.certificado = evento.isCertificado();
             this.frequenciaMinima = evento.getFrequenciaMinima();
+            this.modalidade = evento.getModalidade();
+            this.status = evento.getStatus();
+            this.fusoHorario = evento.getFusoHorario();
+            this.prazoCancelamento = evento.getPrazoCancelamento() == null ? null : evento.getPrazoCancelamento().toString();
             this.organizadoresIds = organizadoresIds != null ? organizadoresIds : new ArrayList<>();
         }
     }
@@ -126,6 +136,14 @@ public class EventoController {
                     buscarVinculoOrganizadorPort.listarPorEvento(ev.getId().intValue())
                             .forEach(v -> organizadores.add(v.getUsuarioId()));
                 }
+                Integer usuarioAutenticado = ctx.attribute(BearerAuthenticationFilter.ATTRIBUTE_USER_ID);
+                boolean podeVerRascunho = false;
+                if (usuarioAutenticado != null) {
+                    Usuario usuario = usuarioRepository.buscarPorId(usuarioAutenticado).orElse(null);
+                    podeVerRascunho = usuario != null && usuario.getPerfil().name().equals("ADMINISTRADOR")
+                            || organizadores.contains(usuarioAutenticado);
+                }
+                if (ev.isDeletado() || (!ev.isPublicado() && !podeVerRascunho)) continue;
                 resposta.add(new EventoDetalheResponse(ev, organizadores));
             }
 
@@ -151,6 +169,18 @@ public class EventoController {
                         .forEach(v -> organizadores.add(v.getUsuarioId()));
             }
 
+            Integer usuarioAutenticado = ctx.attribute(BearerAuthenticationFilter.ATTRIBUTE_USER_ID);
+            boolean podeVerRascunho = false;
+            if (usuarioAutenticado != null) {
+                Usuario usuario = usuarioRepository.buscarPorId(usuarioAutenticado).orElse(null);
+                podeVerRascunho = (usuario != null && usuario.getPerfil().name().equals("ADMINISTRADOR"))
+                        || organizadores.contains(usuarioAutenticado);
+            }
+            if (evento.isDeletado() || (!evento.isPublicado() && !podeVerRascunho)) {
+                ctx.status(HttpStatus.NOT_FOUND).result("Evento não encontrado.");
+                return;
+            }
+
             ctx.status(HttpStatus.OK).json(new EventoDetalheResponse(evento, organizadores));
         } catch (RegraNegocioException e) {
             ctx.status(HttpStatus.NOT_FOUND).result(e.getMessage());
@@ -166,7 +196,7 @@ public class EventoController {
             SalvarEventoRequest request = ctx.bodyAsClass(SalvarEventoRequest.class);
 
             // Identifica o usuário criador via header ou corpo (opcional para criação, mas recomendado)
-            Integer idCriador = extrairIdUsuario(ctx, request != null ? request.usuarioExecutorId : null, false);
+            Integer idCriador = extrairIdUsuario(ctx, false);
 
             ComandoCriarEvento comando = new ComandoCriarEvento(
                     request.titulo,
@@ -177,7 +207,12 @@ public class EventoController {
                     idCriador,
                     request.certificado,
                     request.frequenciaMinima,
-                    request.inscricoesAbertas);
+                    request.inscricoesAbertas,
+                    request.modalidade,
+                    request.status,
+                    request.fusoHorario,
+                    request.prazoCancelamento == null || request.prazoCancelamento.isBlank()
+                            ? null : LocalDateTime.parse(request.prazoCancelamento));
 
             Evento eventoCriado = criarEventoPort.executar(comando);
 
@@ -201,7 +236,7 @@ public class EventoController {
             SalvarEventoRequest request = ctx.bodyAsClass(SalvarEventoRequest.class);
 
             // Extrai o ID do executor (obrigatório para alteração)
-            Integer idExecutor = extrairIdUsuario(ctx, request != null ? request.usuarioExecutorId : null, true);
+            Integer idExecutor = extrairIdUsuario(ctx, true);
 
             // Carrega o usuário executor para verificação de permissões no domínio/serviço
             Usuario usuarioExecutor = carregarUsuario(idExecutor);
@@ -216,7 +251,12 @@ public class EventoController {
                     usuarioExecutor,
                     request.certificado,
                     request.frequenciaMinima,
-                    request.inscricoesAbertas
+                    request.inscricoesAbertas,
+                    request.modalidade,
+                    request.status,
+                    request.fusoHorario,
+                    request.prazoCancelamento == null || request.prazoCancelamento.isBlank()
+                            ? null : LocalDateTime.parse(request.prazoCancelamento)
             );
 
             Evento eventoAtualizado = alterarEventoPort.executar(comando);
@@ -247,19 +287,7 @@ public class EventoController {
         try {
             Long idEvento = Long.parseLong(ctx.pathParam("id"));
 
-            // Tenta obter usuarioExecutorId pelo corpo (caso enviado em JSON) ou do cabeçalho
-            Integer idCorpo = null;
-            if (!ctx.body().isEmpty()) {
-                try {
-                    SalvarEventoRequest request = ctx.bodyAsClass(SalvarEventoRequest.class);
-                    if (request != null) {
-                        idCorpo = request.usuarioExecutorId;
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-
-            Integer idExecutor = extrairIdUsuario(ctx, idCorpo, true);
+            Integer idExecutor = extrairIdUsuario(ctx, true);
             Usuario usuarioExecutor = carregarUsuario(idExecutor);
 
             ComandoExcluirEvento comando = new ComandoExcluirEvento(idEvento, usuarioExecutor);
@@ -294,28 +322,11 @@ public class EventoController {
         }
     }
 
-    // Método auxiliar para extrair o usuário executor do cabeçalho HTTP ou do corpo JSON
-    private Integer extrairIdUsuario(Context ctx, Integer corpoUsuarioId, boolean obrigatorio) {
-        // 1. Tenta extrair do header X-Usuario-Id
-        String headerValue = ctx.header(HEADER_EXECUTOR_ID);
-        if (headerValue != null && !headerValue.isBlank()) {
-            try {
-                return Integer.parseInt(headerValue.trim());
-            } catch (NumberFormatException ignored) {
-            }
-        }
-
-        // 2. Se não estiver no header, aceita se veio no corpo da requisição (usuarioExecutorId)
-        if (corpoUsuarioId != null && corpoUsuarioId > 0) {
-            return corpoUsuarioId;
-        }
-
-        if (obrigatorio) {
-            throw new RegraNegocioException(
-                    "Identificação do usuário executor é obrigatória (via header '" + HEADER_EXECUTOR_ID
-                            + "' ou campo 'usuarioExecutorId').");
-        }
-
+    // A identidade vem exclusivamente da sessão bearer validada no filtro global.
+    private Integer extrairIdUsuario(Context ctx, boolean obrigatorio) {
+        Integer autenticado = ctx.attribute(BearerAuthenticationFilter.ATTRIBUTE_USER_ID);
+        if (autenticado != null && autenticado > 0) return autenticado;
+        if (obrigatorio) throw new RegraNegocioException("É necessário autenticar o usuário executor.");
         return null;
     }
 

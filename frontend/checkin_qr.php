@@ -34,7 +34,7 @@ $idEvento = (int)($_GET['evento_id'] ?? 0);
 $eventoSelecionado = null;
 foreach ($eventosPermitidos as $evento) if ((int)($evento['id'] ?? 0) === $idEvento) $eventoSelecionado = $evento;
 if (!$eventoSelecionado && $eventosPermitidos) { $eventoSelecionado = $eventosPermitidos[0]; $idEvento = (int)$eventoSelecionado['id']; }
-$atividadesResp = $idEvento ? chamar_api('GET', "/atividades/evento/{$idEvento}") : ['erro' => false, 'corpo' => []];
+$atividadesResp = $idEvento ? chamar_api('GET', "/atividades/evento/{$idEvento}", null, headers_autenticados()) : ['erro' => false, 'corpo' => []];
 $atividades = $atividadesResp['erro'] ? [] : ($atividadesResp['corpo'] ?? []);
 $idAtividade = (int)($_GET['atividade_id'] ?? 0);
 $acaoSelecionada = $_GET['acao'] ?? '';

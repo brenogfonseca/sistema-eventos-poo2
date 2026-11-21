@@ -34,16 +34,19 @@ public class CriarEventoService implements CriarEventoPort {
         List<Evento> eventosExistentes = eventoRepository.listarTodos();
         for (Evento e : eventosExistentes) {
             // Apenas verifica conflito com eventos ativos
-            if (!e.isDeletado() && e.getPeriodo().conflitaCom(periodo)) {
+            if (!e.isDeletado() && !"CANCELADO".equals(e.getStatus())
+                    && e.getPeriodo().conflitaCom(periodo)) {
                 throw new RegraNegocioException("Já existe um evento marcado para este período.");
             }
         }
 
         Evento evento = new Evento(comando.titulo, comando.descricao, periodo, comando.capacidade);
+        evento.configurarPublicacao(comando.modalidade, comando.status, comando.fusoHorario);
+        evento.configurarPrazoCancelamento(comando.prazoCancelamento);
         if (comando.certificado) {
             evento.habilitarCertificado(comando.frequenciaMinima);
         }
-        if (comando.inscricoesAbertas) evento.abrirInscricoes();
+        if (comando.inscricoesAbertas && evento.isPublicado()) evento.abrirInscricoes();
         Evento eventoSalvo = eventoRepository.salvar(evento);
 
         // Se foi informado o criador/organizador e o repositório estiver presente, registra o vínculo associativo

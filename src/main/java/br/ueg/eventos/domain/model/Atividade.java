@@ -19,6 +19,7 @@ public class Atividade {
     private String tipo;
     private TipoFrequenciaEnum tipoFrequencia;
     private Trilha trilha;
+    private String descricao;
 
     public Atividade(String nome, Long eventoId, Local local, LocalTime horaInicio, LocalTime horaFim,
                      LocalDate data, boolean controlaVagas, int vagas, String tipo, 
@@ -46,6 +47,7 @@ public class Atividade {
         this.tipo = tipo;
         this.tipoFrequencia = tipoFrequencia;
         this.trilha = trilha;
+        this.descricao = null;
     }
 
     public Atividade(Long id, String nome, Long eventoId, Local local, LocalTime horaInicio, LocalTime horaFim,
@@ -91,4 +93,11 @@ public class Atividade {
     public String getTipo() { return tipo; }
     public TipoFrequenciaEnum getTipoFrequencia() { return tipoFrequencia; }
     public Trilha getTrilha() { return trilha; }
+    public String getDescricao() { return descricao; }
+    public void alterarDescricao(String descricao) {
+        if (descricao != null && descricao.length() > 4000) {
+            throw new RegraNegocioException("A descrição da atividade deve ter no máximo 4000 caracteres.");
+        }
+        this.descricao = descricao == null || descricao.isBlank() ? null : descricao.trim();
+    }
 }

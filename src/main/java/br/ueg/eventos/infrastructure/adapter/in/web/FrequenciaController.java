@@ -3,6 +3,7 @@ package br.ueg.eventos.infrastructure.adapter.in.web;
 import br.ueg.eventos.application.port.in.frequencia.BuscarFrequenciaPorIdPort;
 import br.ueg.eventos.application.port.in.frequencia.ListarFrequenciasPorInscricaoPort;
 import br.ueg.eventos.application.port.in.frequencia.RegistrarPresencaManualPort;
+import br.ueg.eventos.application.port.out.InscricaoRepositoryPort;
 import br.ueg.eventos.domain.exception.AcessoNegadoException;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Frequencia;
@@ -14,13 +15,19 @@ public class FrequenciaController {
     private final BuscarFrequenciaPorIdPort buscarPort;
     private final ListarFrequenciasPorInscricaoPort listarPort;
     private final RegistrarPresencaManualPort registrarManualPort;
+    private final InscricaoRepositoryPort inscricoes;
+    private final EventoAuthorization autorizacao;
 
     public FrequenciaController(BuscarFrequenciaPorIdPort buscarPort,
                                 ListarFrequenciasPorInscricaoPort listarPort,
-                                RegistrarPresencaManualPort registrarManualPort) {
+                                RegistrarPresencaManualPort registrarManualPort,
+                                InscricaoRepositoryPort inscricoes,
+                                EventoAuthorization autorizacao) {
         this.buscarPort = buscarPort;
         this.listarPort = listarPort;
         this.registrarManualPort = registrarManualPort;
+        this.inscricoes = inscricoes;
+        this.autorizacao = autorizacao;
     }
 
     public void registerRoutes(Javalin app) {
@@ -53,7 +60,11 @@ public class FrequenciaController {
 
     private void buscarPorId(Context ctx) {
         try {
-            ctx.status(HttpStatus.OK).json(buscarPort.executar(Integer.valueOf(ctx.pathParam("id"))));
+            Frequencia frequencia = buscarPort.executar(Integer.valueOf(ctx.pathParam("id")));
+            autorizarConsulta(ctx, (long) frequencia.getIdInscricao());
+            ctx.status(HttpStatus.OK).json(frequencia);
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (RegraNegocioException | IllegalArgumentException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
         } catch (Exception e) {
@@ -63,11 +74,24 @@ public class FrequenciaController {
 
     private void listarPorInscricao(Context ctx) {
         try {
-            ctx.status(HttpStatus.OK).json(listarPort.executar(Long.valueOf(ctx.pathParam("idInscricao"))));
+            Long idInscricao = Long.valueOf(ctx.pathParam("idInscricao"));
+            autorizarConsulta(ctx, idInscricao);
+            ctx.status(HttpStatus.OK).json(listarPort.executar(idInscricao));
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (RegraNegocioException | IllegalArgumentException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
         } catch (Exception e) {
             ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).result("Erro interno ao listar frequências.");
+        }
+    }
+
+    private void autorizarConsulta(Context ctx, Long idInscricao) {
+        var inscricao = inscricoes.buscarPorId(idInscricao)
+                .orElseThrow(() -> new RegraNegocioException("Inscrição não encontrada."));
+        int executor = autorizacao.usuarioAutenticado(ctx);
+        if (!inscricao.getIdUsuario().equals((long) executor) && !autorizacao.ehAdministrador(ctx)) {
+            autorizacao.exigirGerenciadorDaAtividade(ctx, inscricao.getIdAtividade());
         }
     }
 

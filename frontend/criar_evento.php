@@ -41,6 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $certificado = isset($_POST['certificado']);
     $frequenciaMinima = (int)($_POST['frequenciaMinima'] ?? 75);
     $inscricoesAbertas = ($_POST['inscricoesAbertas'] ?? '0') === '1';
+    $modalidade = $_POST['modalidade'] ?? 'PRESENCIAL';
+    $status = $_POST['status'] ?? 'PUBLICADO';
+    $fusoHorario = trim($_POST['fusoHorario'] ?? 'America/Sao_Paulo');
+    $prazoCancelamento = trim($_POST['prazoCancelamento'] ?? '');
 
     // 2. Validação básica antes de chamar a API
     if (empty($titulo) || empty($dataInicio) || empty($dataFim)) {
@@ -66,6 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'frequenciaMinima'   => $frequenciaMinima,
             'inscricoesAbertas'  => $inscricoesAbertas,
             'usuarioExecutorId'  => id_usuario_logado(), // ID do organizador/criador
+            'modalidade'         => $modalidade,
+            'status'             => $status,
+            'fusoHorario'        => $fusoHorario,
+            'prazoCancelamento'  => $prazoCancelamento !== '' ? $prazoCancelamento : null,
         ];
 
         // 5. Dispara a requisição: POST /eventos passando headers autenticados
@@ -118,6 +126,34 @@ ob_start();
                 value="<?= htmlspecialchars($_POST['titulo'] ?? '') ?>"
                 required
             >
+        </div>
+
+        <div class="form-linha">
+            <div class="form-grupo">
+                <label for="modalidade">Modalidade</label>
+                <select id="modalidade" name="modalidade">
+                    <?php foreach (['PRESENCIAL', 'ONLINE', 'HIBRIDO'] as $opcao): ?>
+                        <option value="<?= $opcao ?>" <?= ($_POST['modalidade'] ?? 'PRESENCIAL') === $opcao ? 'selected' : '' ?>><?= $opcao ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-grupo">
+                <label for="status">Publicação</label>
+                <select id="status" name="status">
+                    <?php foreach (['PUBLICADO' => 'Publicado', 'RASCUNHO' => 'Rascunho'] as $valor => $rotulo): ?>
+                        <option value="<?= $valor ?>" <?= ($_POST['status'] ?? 'PUBLICADO') === $valor ? 'selected' : '' ?>><?= $rotulo ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <div class="form-grupo">
+            <label for="fusoHorario">Fuso horário</label>
+            <input id="fusoHorario" name="fusoHorario" value="<?= htmlspecialchars($fusoHorario) ?>" required>
+        </div>
+        <div class="form-grupo">
+            <label for="prazoCancelamento">Prazo limite para cancelamento da inscrição</label>
+            <input type="datetime-local" id="prazoCancelamento" name="prazoCancelamento" value="<?= htmlspecialchars($_POST['prazoCancelamento'] ?? '') ?>">
+            <small class="text-muted">Se ficar vazio, o cancelamento é permitido até o início do evento.</small>
         </div>
 
         <div class="form-grupo">

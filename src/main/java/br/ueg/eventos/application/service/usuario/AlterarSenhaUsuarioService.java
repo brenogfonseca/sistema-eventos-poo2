@@ -27,6 +27,12 @@ public class AlterarSenhaUsuarioService implements AlterarSenhaUsuarioPort {
                 .orElseThrow(() -> new RegraNegocioException(
                         "Usuário não encontrado com o id: " + comando.idUsuario));
 
+        Usuario executor = usuarioRepository.buscarPorId(comando.idExecutor)
+                .orElseThrow(() -> new RegraNegocioException("Usuário executor não encontrado."));
+        if (!comando.idUsuario.equals(comando.idExecutor) && !executor.podeAlterarPerfil()) {
+            throw new RegraNegocioException("Acesso negado: só é permitido alterar a própria senha.");
+        }
+
         String novoHash = passwordEncryptor.criptografar(comando.novaSenhaLimpa);
 
         // O domínio valida a força da nova senha e atualiza o hash internamente

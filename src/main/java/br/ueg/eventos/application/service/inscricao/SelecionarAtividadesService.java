@@ -51,7 +51,8 @@ public class SelecionarAtividadesService implements SelecionarAtividadesPort {
         }
         Evento evento = eventoRepository.buscarPorId(inscricaoEvento.getIdEvento())
                 .orElseThrow(() -> new RegraNegocioException("Evento não encontrado."));
-        if (evento.isDeletado() || !evento.isInscricoesAbertas()) {
+        LocalDateTime agora = LocalDateTime.now(java.time.ZoneId.of(evento.getFusoHorario()));
+        if (evento.isDeletado() || !evento.isPublicado() || !evento.isInscricoesAbertas()) {
             throw new RegraNegocioException("A escolha de atividades está indisponível porque as inscrições do evento estão fechadas.");
         }
 
@@ -76,7 +77,7 @@ public class SelecionarAtividadesService implements SelecionarAtividadesPort {
                 throw new RegraNegocioException("Não há vagas disponíveis para a atividade " + atividade.getNome() + ".");
             }
             LocalDateTime inicio = LocalDateTime.of(atividade.getData(), atividade.getHoraInicio());
-            if (!inscricoesAtivas.containsKey(idAtividade) && !inicio.isAfter(LocalDateTime.now())) {
+            if (!inscricoesAtivas.containsKey(idAtividade) && !inicio.isAfter(agora)) {
                 throw new RegraNegocioException("Não é possível escolher a atividade '" + atividade.getNome() + "' depois que ela começou.");
             }
             atividadesAlvo.add(atividade);
@@ -89,10 +90,22 @@ public class SelecionarAtividadesService implements SelecionarAtividadesPort {
                 Atividade atividade = atividadeRepository.buscarPorId(existente.getIdAtividade())
                         .orElseThrow(() -> new RegraNegocioException("Atividade escolhida não encontrada."));
                 LocalDateTime inicio = LocalDateTime.of(atividade.getData(), atividade.getHoraInicio());
-                if (!LocalDateTime.now().isBefore(inicio)) {
+                if (!agora.isBefore(inicio)) {
                     throw new RegraNegocioException("Não é possível remover a atividade '" + atividade.getNome() + "' depois que ela começou.");
                 }
             }
+        }
+
+        List<Atividade> novasAtividades = atividadesAlvo.stream()
+                .filter(atividade -> !inscricoesAtivas.containsKey(atividade.getId()))
+                .toList();
+        List<Atividade> vagasReservadas = new ArrayList<>();
+        for (Atividade atividade : novasAtividades) {
+            if (!atividadeRepository.consumirVaga(atividade.getId())) {
+                vagasReservadas.forEach(reservada -> atividadeRepository.liberarVaga(reservada.getId()));
+                throw new RegraNegocioException("Não há vagas disponíveis para a atividade " + atividade.getNome() + ".");
+            }
+            vagasReservadas.add(atividade);
         }
 
         List<Inscricao> selecionadas = new ArrayList<>();
@@ -101,9 +114,8 @@ public class SelecionarAtividadesService implements SelecionarAtividadesPort {
                 Atividade atividade = atividadeRepository.buscarPorId(existente.getIdAtividade())
                         .orElseThrow(() -> new RegraNegocioException("Atividade escolhida não encontrada."));
                 existente.cancelar();
-                atividade.cancelarInscricao();
-                atividadeRepository.salvar(atividade);
                 inscricaoRepository.salvar(existente);
+                atividadeRepository.liberarVaga(atividade.getId());
             }
         }
         for (Atividade atividade : atividadesAlvo) {
@@ -112,10 +124,14 @@ public class SelecionarAtividadesService implements SelecionarAtividadesPort {
                 selecionadas.add(existente);
                 continue;
             }
-            atividade.registrarInscricao();
-            atividadeRepository.salvar(atividade);
-            selecionadas.add(inscricaoRepository.salvar(new Inscricao(
-                    atividade.getId(), inscricaoEvento.getIdUsuario(), idInscricaoEvento)));
+            try {
+                selecionadas.add(inscricaoRepository.salvar(new Inscricao(
+                        atividade.getId(), inscricaoEvento.getIdUsuario(), idInscricaoEvento)));
+                vagasReservadas.remove(atividade);
+            } catch (RuntimeException e) {
+                vagasReservadas.forEach(reservada -> atividadeRepository.liberarVaga(reservada.getId()));
+                throw e;
+            }
         }
         return selecionadas;
     }

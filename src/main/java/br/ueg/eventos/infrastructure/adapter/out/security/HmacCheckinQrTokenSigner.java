@@ -2,6 +2,7 @@ package br.ueg.eventos.infrastructure.adapter.out.security;
 
 import br.ueg.eventos.application.port.out.CheckinQrTokenSignerPort;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
+import br.ueg.eventos.infrastructure.config.ApplicationEnvironment;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -21,7 +22,7 @@ public class HmacCheckinQrTokenSigner implements CheckinQrTokenSignerPort {
     private final String segredo;
 
     public HmacCheckinQrTokenSigner() {
-        this(System.getenv("EVENTOS_QR_SECRET"));
+        this(ApplicationEnvironment.get("EVENTOS_QR_SECRET"));
     }
 
     HmacCheckinQrTokenSigner(String segredo) {

@@ -11,9 +11,15 @@ public class Questionario {
     private Integer idAtividade;
     private String titulo;
     private List<Questao> questoes;
+    private boolean anonimo;
+    private boolean publicado;
 
 // Construtor para CRIAR um novo questionário (sem ID)
     public Questionario(Integer idAtividade, String titulo) {
+        this(idAtividade, titulo, false, false);
+    }
+
+    public Questionario(Integer idAtividade, String titulo, boolean anonimo, boolean publicado) {
         if (idAtividade == null || idAtividade <= 0) {
             throw new RegraNegocioException("O questionário deve obrigatoriamente estar vinculado a um ID de atividade válido.");
         }
@@ -21,6 +27,8 @@ public class Questionario {
 
         this.idAtividade = idAtividade;
         this.questoes = new ArrayList<>();
+        this.anonimo = anonimo;
+        this.publicado = publicado;
     }
 
     // Construtor para RECUPERAR do banco (com ID)
@@ -28,9 +36,19 @@ public class Questionario {
         this(idAtividade, titulo); // Reaproveita as validações do construtor acima
         this.id = id;
     }
+
+    public Questionario(Integer id, Integer idAtividade, String titulo, boolean anonimo, boolean publicado) {
+        this(idAtividade, titulo, anonimo, publicado);
+        this.id = id;
+    }
     // Permite reconfigurar/atualizar o título do questionário.
     public void alterarTitulo(String novoTitulo) {
         setTituloComValidacao(novoTitulo);
+    }
+
+    public void configurarAvaliacao(boolean anonimo, boolean publicado) {
+        this.anonimo = anonimo;
+        this.publicado = publicado;
     }
 
     // Centraliza a validação das invariantes do título.
@@ -74,4 +92,6 @@ public class Questionario {
     public String getTitulo() {
         return titulo;
     }
+    public boolean isAnonimo() { return anonimo; }
+    public boolean isPublicado() { return publicado; }
 }

@@ -26,7 +26,8 @@ public class CriarQuestionarioService implements CriarQuestionarioPort {
         }
 
         Integer idAtividade = comando.idAtividade != null ? comando.idAtividade.intValue() : null;
-        Questionario questionario = new Questionario(idAtividade, comando.titulo);
+        Questionario questionario = new Questionario(
+                idAtividade, comando.titulo, comando.anonimo, comando.publicado);
 
         return questionarioRepository.salvar(questionario);
     }

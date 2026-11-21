@@ -19,6 +19,23 @@ $resultado = chamar_api('GET', "/inscricoes/eventos/usuario/{$idUsuario}", null,
 $inscricoes = $resultado['erro'] ? [] : ($resultado['corpo'] ?? []);
 $erro = $resultado['erro'] ? ($resultado['msg_erro'] ?? '') : '';
 
+if (isset($_GET['certificado'])) {
+    $idCertificado = filter_input(INPUT_GET, 'certificado', FILTER_VALIDATE_INT) ?: 0;
+    if ($idCertificado > 0) {
+        $pdf = chamar_api('GET', "/inscricoes/evento/{$idCertificado}/certificado.pdf", null, headers_autenticados());
+        if (!$pdf['erro'] && is_string($pdf['corpo'])) {
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename=certificado-evento-' . $idCertificado . '.pdf');
+            header('X-Content-Type-Options: nosniff');
+            echo $pdf['corpo'];
+            exit;
+        }
+        $_SESSION['inscricoes_feedback'] = ['sucesso' => false, 'mensagem' => $pdf['msg_erro'] ?: 'Não foi possível emitir o certificado.'];
+        header('Location: minhas_inscricoes.php');
+        exit;
+    }
+}
+
 ob_start();
 ?>
 <div class="secao-cabecalho">
@@ -42,6 +59,11 @@ ob_start();
     $qrResp = $ativo ? chamar_api('GET', "/inscricoes/evento/{$idInscricaoEvento}/checkin-qr", null, headers_autenticados()) : ['erro' => true, 'msg_erro' => 'Inscrição cancelada.'];
     $frequenciaResp = $ativo ? chamar_api('GET', "/inscricoes/evento/{$idInscricaoEvento}/frequencia-certificado", null, headers_autenticados()) : ['erro' => true];
     $frequencia = $frequenciaResp['erro'] ? null : ($frequenciaResp['corpo'] ?? null);
+    $eventoEncerrado = false;
+    try {
+        $fusoEvento = new DateTimeZone($evento['fusoHorario'] ?? 'America/Sao_Paulo');
+        $eventoEncerrado = new DateTimeImmutable($evento['fim'] ?? 'now', $fusoEvento) <= new DateTimeImmutable('now', $fusoEvento);
+    } catch (Throwable $ignorado) { }
 ?>
 <section class="card mb-md">
     <div class="secao-cabecalho">
@@ -84,6 +106,11 @@ ob_start();
             (mínimo <?= (int)$frequencia['frequenciaMinima'] ?>%) —
             <?= !empty($frequencia['elegivel']) ? 'elegível ao certificado' : 'ainda não elegível' ?>
         </p>
+        <?php if (!empty($frequencia['elegivel']) && $eventoEncerrado): ?>
+            <a class="btn btn-primario" href="minhas_inscricoes.php?certificado=<?= $idInscricaoEvento ?>">Baixar certificado PDF</a>
+        <?php elseif (!empty($frequencia['elegivel'])): ?>
+            <p class="text-muted">O certificado será liberado após o encerramento do evento.</p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($ativo && !$qrResp['erro'] && !empty($qrResp['corpo']['imagemBase64'])): ?>

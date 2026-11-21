@@ -25,6 +25,7 @@ public class AtualizarQuestaoService implements AtualizarQuestaoPort {
         Questao questao = questaoExistente.get();
         questao.alterarEnunciado(comando.enunciado);
         questao.alterarTipo(comando.tipo);
+        questao.configurarFormato(comando.opcoes, comando.escalaMinima, comando.escalaMaxima);
 
         return questaoRepository.salvar(questao);
     }

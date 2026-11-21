@@ -40,33 +40,15 @@ public class InscreverNoEventoService implements InscreverNoEventoPort {
                 .orElseThrow(() -> new RegraNegocioException("Evento não encontrado."));
         validarEventoAberto(evento);
 
-        var existente = inscricaoRepository.buscarPorEventoEUsuario(idEvento, idUsuario);
-        if (existente.isPresent()) {
-            InscricaoEvento inscricao = existente.get();
-            if (inscricao.estaAtiva()) {
-                return inscricao;
-            }
-            validarVaga(idEvento, evento);
-            inscricao.reativar();
-            return inscricaoRepository.salvar(inscricao);
-        }
-
-        validarVaga(idEvento, evento);
-        return inscricaoRepository.salvar(new InscricaoEvento(idEvento, idUsuario));
-    }
-
-    private void validarVaga(Long idEvento, Evento evento) {
-        long ativos = inscricaoRepository.listarPorEvento(idEvento).stream()
-                .filter(InscricaoEvento::estaAtiva).count();
-        if (ativos >= evento.getCapacidadeMaxima()) {
-            throw new RegraNegocioException("Não há vagas disponíveis neste evento.");
-        }
+        return inscricaoRepository.inscreverSeDisponivel(idEvento, idUsuario, evento.getCapacidadeMaxima());
     }
 
     private void validarEventoAberto(Evento evento) {
         if (evento.isDeletado()) throw new RegraNegocioException("Não é possível se inscrever em um evento excluído.");
+        if (!evento.isPublicado()) throw new RegraNegocioException("Não é possível se inscrever em um evento que não está publicado.");
         if (!evento.isInscricoesAbertas()) throw new RegraNegocioException("As inscrições para este evento estão fechadas.");
-        if (!evento.getPeriodo().getInicio().isAfter(LocalDateTime.now())) {
+        if (!evento.getPeriodo().getInicio().isAfter(
+                LocalDateTime.now(java.time.ZoneId.of(evento.getFusoHorario())))) {
             throw new RegraNegocioException("Não é possível se inscrever depois que o evento começou.");
         }
     }
