@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: sistema-eventos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${EVENTOS_DB_NAME:-eventos}
+      POSTGRES_USER: ${EVENTOS_DB_USER:-eventos}
+      POSTGRES_PASSWORD: ${EVENTOS_DB_PASSWORD:-eventos_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - eventos_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${EVENTOS_DB_USER:-eventos} -d ${EVENTOS_DB_NAME:-eventos}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  eventos_postgres_data:

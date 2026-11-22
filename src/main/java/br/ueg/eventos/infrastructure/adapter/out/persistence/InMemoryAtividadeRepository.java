@@ -35,12 +35,15 @@ public class InMemoryAtividadeRepository
                     atividade.getVagas(),
                     atividade.getTipo(),
                     atividade.getTipoFrequencia(),
-                    atividade.getTrilha()
+                    atividade.getTrilha(),
+                    atividade.getMetodoIdentificacaoCheckin()
             );
+            atividadeSalva.alterarDescricao(atividade.getDescricao());
 
             atividades.put(novoId, atividadeSalva);
             return atividadeSalva;
         } else {
+            atividade.alterarDescricao(atividade.getDescricao());
             atividades.put(atividade.getId(), atividade);
             return atividade;
         }
@@ -65,7 +68,36 @@ public class InMemoryAtividadeRepository
     }
 
     @Override
+    public List<Atividade> listarPorLocal(Long idLocal) {
+        if (idLocal == null) return List.of();
+        List<Atividade> resultado = new ArrayList<>();
+        for (Atividade atividade : atividades.values()) {
+            if (atividade.getLocal() != null && idLocal.equals(atividade.getLocal().getId())) {
+                resultado.add(atividade);
+            }
+        }
+        return resultado;
+    }
+
+    @Override
     public void excluir(Long id) {
         atividades.remove(id);
+    }
+
+    @Override
+    public synchronized boolean consumirVaga(Long id) {
+        Atividade atividade = atividades.get(id);
+        if (atividade == null) throw new IllegalStateException("Atividade não encontrada.");
+        if (!atividade.isControlaVagas()) return true;
+        if (atividade.getVagas() <= 0) return false;
+        atividade.registrarInscricao();
+        return true;
+    }
+
+    @Override
+    public synchronized void liberarVaga(Long id) {
+        Atividade atividade = atividades.get(id);
+        if (atividade == null) throw new IllegalStateException("Atividade não encontrada.");
+        atividade.cancelarInscricao();
     }
 }

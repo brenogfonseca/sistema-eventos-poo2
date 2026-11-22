@@ -60,7 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
     $capacidade = (int)($_POST['capacidade'] ?? 0);
     $certificado = isset($_POST['certificado']);
     $frequenciaMinima = (int)($_POST['frequenciaMinima'] ?? $eventoAtual['frequenciaMinima'] ?? 75);
+    $criterioFrequenciaCertificado = $_POST['criterioFrequenciaCertificado'] ?? ($eventoAtual['criterioFrequenciaCertificado'] ?? 'PERCENTUAL');
+    $frequenciaMinimaMinutos = (int)round((float)($_POST['frequenciaMinimaHoras'] ?? (($eventoAtual['frequenciaMinimaMinutos'] ?? 0) / 60)) * 60);
+    $modoCargaHorariaCertificado = $_POST['modoCargaHorariaCertificado'] ?? ($eventoAtual['modoCargaHorariaCertificado'] ?? 'DINAMICA');
+    $cargaHorariaFixaMinutos = (int)round((float)($_POST['cargaHorariaFixaHoras'] ?? (($eventoAtual['cargaHorariaFixaMinutos'] ?? 0) / 60)) * 60);
     $inscricoesAbertas = ($_POST['inscricoesAbertas'] ?? '0') === '1';
+    $modalidade = $_POST['modalidade'] ?? ($eventoAtual['modalidade'] ?? 'PRESENCIAL');
+    $status = $_POST['status'] ?? ($eventoAtual['status'] ?? 'PUBLICADO');
+    $fusoHorario = trim($_POST['fusoHorario'] ?? ($eventoAtual['fusoHorario'] ?? 'America/Sao_Paulo'));
+    $prazoCancelamento = trim($_POST['prazoCancelamento'] ?? '');
 
     if (empty($titulo) || empty($dataInicio) || empty($dataFim)) {
         $erro = 'Título, data de início e data de fim são obrigatórios.';
@@ -80,8 +88,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
             'capacidade'        => $capacidade,
             'certificado'       => $certificado,
             'frequenciaMinima'  => $frequenciaMinima,
+            'criterioFrequenciaCertificado' => $criterioFrequenciaCertificado,
+            'frequenciaMinimaMinutos' => $frequenciaMinimaMinutos,
+            'modoCargaHorariaCertificado' => $modoCargaHorariaCertificado,
+            'cargaHorariaFixaMinutos' => $cargaHorariaFixaMinutos,
             'inscricoesAbertas' => $inscricoesAbertas,
             'usuarioExecutorId' => $idUsuarioLogado, // Enviado no corpo JSON para a API Java
+            'modalidade'        => $modalidade,
+            'status'            => $status,
+            'fusoHorario'       => $fusoHorario,
+            'prazoCancelamento' => $prazoCancelamento !== '' ? $prazoCancelamento : null,
         ];
 
         // Dispara PUT /eventos/{id} com header X-Usuario-Id
@@ -100,6 +116,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
 $valTitulo = $_POST['titulo'] ?? $eventoAtual['titulo'] ?? '';
 $valDescricao = $_POST['descricao'] ?? $eventoAtual['descricao'] ?? '';
 $valCapacidade = $_POST['capacidade'] ?? $eventoAtual['capacidade'] ?? '';
+$valModalidade = $_POST['modalidade'] ?? $eventoAtual['modalidade'] ?? 'PRESENCIAL';
+$valStatus = $_POST['status'] ?? $eventoAtual['status'] ?? 'PUBLICADO';
+$valFusoHorario = $_POST['fusoHorario'] ?? $eventoAtual['fusoHorario'] ?? 'America/Sao_Paulo';
+$valPrazoCancelamento = $_POST['prazoCancelamento'] ?? (!empty($eventoAtual['prazoCancelamento']) ? date('Y-m-d\TH:i', strtotime($eventoAtual['prazoCancelamento'])) : '');
 $valCertificado = $_SERVER['REQUEST_METHOD'] === 'POST'
     ? isset($_POST['certificado'])
     : !empty($eventoAtual['certificado']);
@@ -147,6 +167,34 @@ ob_start();
             >
         </div>
 
+        <div class="form-linha">
+            <div class="form-grupo">
+                <label for="modalidade">Modalidade</label>
+                <select id="modalidade" name="modalidade">
+                    <?php foreach (['PRESENCIAL', 'ONLINE', 'HIBRIDO'] as $opcao): ?>
+                        <option value="<?= $opcao ?>" <?= $valModalidade === $opcao ? 'selected' : '' ?>><?= $opcao ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-grupo">
+                <label for="status">Publicação</label>
+                <select id="status" name="status">
+                    <?php foreach (['PUBLICADO' => 'Publicado', 'RASCUNHO' => 'Rascunho', 'CANCELADO' => 'Cancelado', 'ENCERRADO' => 'Encerrado'] as $valor => $rotulo): ?>
+                        <option value="<?= $valor ?>" <?= $valStatus === $valor ? 'selected' : '' ?>><?= $rotulo ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <div class="form-grupo">
+            <label for="fusoHorario">Fuso horário</label>
+            <input id="fusoHorario" name="fusoHorario" value="<?= htmlspecialchars($valFusoHorario) ?>" required>
+        </div>
+        <div class="form-grupo">
+            <label for="prazoCancelamento">Prazo limite para cancelamento da inscrição</label>
+            <input type="datetime-local" id="prazoCancelamento" name="prazoCancelamento" value="<?= htmlspecialchars($valPrazoCancelamento) ?>">
+            <small class="text-muted">Se ficar vazio, o cancelamento é permitido até o início do evento.</small>
+        </div>
+
         <div class="form-grupo">
             <label><input type="checkbox" name="certificado" value="1"
                 <?= $valCertificado ? 'checked' : '' ?>> Emitir certificado para este evento</label>
@@ -156,6 +204,22 @@ ob_start();
                     <option value="<?= $percentual ?>" <?= (int)($_POST['frequenciaMinima'] ?? $eventoAtual['frequenciaMinima'] ?? 75) === $percentual ? 'selected' : '' ?>><?= $percentual ?>%</option>
                 <?php endforeach; ?>
             </select>
+            <label for="criterioFrequenciaCertificado">Critério de elegibilidade</label>
+            <select id="criterioFrequenciaCertificado" name="criterioFrequenciaCertificado">
+                <?php $criterioAtual = $_POST['criterioFrequenciaCertificado'] ?? ($eventoAtual['criterioFrequenciaCertificado'] ?? 'PERCENTUAL'); ?>
+                <option value="PERCENTUAL" <?= $criterioAtual === 'PERCENTUAL' ? 'selected' : '' ?>>Percentual da carga horária máxima do evento</option>
+                <option value="HORAS" <?= $criterioAtual === 'HORAS' ? 'selected' : '' ?>>Quantidade mínima de horas presentes</option>
+            </select>
+            <label for="frequenciaMinimaHoras">Horas mínimas presentes</label>
+            <input type="number" id="frequenciaMinimaHoras" name="frequenciaMinimaHoras" min="0.25" step="0.25" value="<?= htmlspecialchars($_POST['frequenciaMinimaHoras'] ?? number_format(($eventoAtual['frequenciaMinimaMinutos'] ?? 0) / 60, 2, '.', '')) ?>">
+            <label for="modoCargaHorariaCertificado">Carga horária impressa no certificado</label>
+            <select id="modoCargaHorariaCertificado" name="modoCargaHorariaCertificado">
+                <?php $modoAtual = $_POST['modoCargaHorariaCertificado'] ?? ($eventoAtual['modoCargaHorariaCertificado'] ?? 'DINAMICA'); ?>
+                <option value="DINAMICA" <?= $modoAtual === 'DINAMICA' ? 'selected' : '' ?>>Dinâmica: horas validadas do participante</option>
+                <option value="FIXA" <?= $modoAtual === 'FIXA' ? 'selected' : '' ?>>Fixa: valor definido pelo organizador</option>
+            </select>
+            <label for="cargaHorariaFixaHoras">Carga horária fixa (horas)</label>
+            <input type="number" id="cargaHorariaFixaHoras" name="cargaHorariaFixaHoras" min="0.25" step="0.25" value="<?= htmlspecialchars($_POST['cargaHorariaFixaHoras'] ?? number_format(($eventoAtual['cargaHorariaFixaMinutos'] ?? 0) / 60, 2, '.', '')) ?>">
         </div>
 
         <div class="form-grupo">

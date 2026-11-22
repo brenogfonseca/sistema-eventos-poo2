@@ -19,6 +19,23 @@ $resultado = chamar_api('GET', "/inscricoes/eventos/usuario/{$idUsuario}", null,
 $inscricoes = $resultado['erro'] ? [] : ($resultado['corpo'] ?? []);
 $erro = $resultado['erro'] ? ($resultado['msg_erro'] ?? '') : '';
 
+if (isset($_GET['certificado'])) {
+    $idCertificado = filter_input(INPUT_GET, 'certificado', FILTER_VALIDATE_INT) ?: 0;
+    if ($idCertificado > 0) {
+        $pdf = chamar_api('GET', "/inscricoes/evento/{$idCertificado}/certificado.pdf", null, headers_autenticados());
+        if (!$pdf['erro'] && is_string($pdf['corpo'])) {
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename=certificado-evento-' . $idCertificado . '.pdf');
+            header('X-Content-Type-Options: nosniff');
+            echo $pdf['corpo'];
+            exit;
+        }
+        $_SESSION['inscricoes_feedback'] = ['sucesso' => false, 'mensagem' => $pdf['msg_erro'] ?: 'Não foi possível emitir o certificado.'];
+        header('Location: minhas_inscricoes.php');
+        exit;
+    }
+}
+
 ob_start();
 ?>
 <div class="secao-cabecalho">
@@ -42,6 +59,11 @@ ob_start();
     $qrResp = $ativo ? chamar_api('GET', "/inscricoes/evento/{$idInscricaoEvento}/checkin-qr", null, headers_autenticados()) : ['erro' => true, 'msg_erro' => 'Inscrição cancelada.'];
     $frequenciaResp = $ativo ? chamar_api('GET', "/inscricoes/evento/{$idInscricaoEvento}/frequencia-certificado", null, headers_autenticados()) : ['erro' => true];
     $frequencia = $frequenciaResp['erro'] ? null : ($frequenciaResp['corpo'] ?? null);
+    $eventoEncerrado = false;
+    try {
+        $fusoEvento = new DateTimeZone($evento['fusoHorario'] ?? 'America/Sao_Paulo');
+        $eventoEncerrado = new DateTimeImmutable($evento['fim'] ?? 'now', $fusoEvento) <= new DateTimeImmutable('now', $fusoEvento);
+    } catch (Throwable $ignorado) { }
 ?>
 <section class="card mb-md">
     <div class="secao-cabecalho">
@@ -80,10 +102,31 @@ ob_start();
     <?php endif; ?>
 
     <?php if ($ativo && $frequencia && !empty($frequencia['certificadoHabilitado'])): ?>
-        <p><strong>Frequência computada:</strong> <?= number_format((float)$frequencia['percentualFrequencia'], 2, ',', '.') ?>%
-            (mínimo <?= (int)$frequencia['frequenciaMinima'] ?>%) —
+        <?php
+            $criterioPorPercentual = ($frequencia['criterioFrequencia'] ?? 'PERCENTUAL') === 'PERCENTUAL';
+            $horasPresentes = (int)($frequencia['minutosPresentes'] ?? 0) / 60;
+            $horasTotais = (int)($frequencia['minutosTotais'] ?? 0) / 60;
+            $horasMinimas = (int)($frequencia['frequenciaMinimaMinutos'] ?? 0) / 60;
+            $cargaCertificadoHoras = (int)($frequencia['cargaHorariaCertificadoMinutos'] ?? 0) / 60;
+        ?>
+        <p><strong>Presença computada:</strong>
+            <?= number_format($horasPresentes, 2, ',', '.') ?> h de
+            <?= number_format($horasTotais, 2, ',', '.') ?> h possíveis
+            (<?= number_format((float)$frequencia['percentualFrequencia'], 2, ',', '.') ?>%).
+            <?php if ($criterioPorPercentual): ?>
+                Critério mínimo: <?= (int)$frequencia['frequenciaMinima'] ?>%.
+            <?php else: ?>
+                Critério mínimo: <?= number_format($horasMinimas, 2, ',', '.') ?> h.
+            <?php endif; ?>
+            Certificado configurado para <?= number_format($cargaCertificadoHoras, 2, ',', '.') ?> h
+            (<?= ($frequencia['modoCargaHoraria'] ?? 'DINAMICA') === 'FIXA' ? 'carga fixa' : 'carga dinâmica' ?>) —
             <?= !empty($frequencia['elegivel']) ? 'elegível ao certificado' : 'ainda não elegível' ?>
         </p>
+        <?php if (!empty($frequencia['elegivel']) && $eventoEncerrado): ?>
+            <a class="btn btn-primario" href="minhas_inscricoes.php?certificado=<?= $idInscricaoEvento ?>">Baixar certificado PDF</a>
+        <?php elseif (!empty($frequencia['elegivel'])): ?>
+            <p class="text-muted">O certificado será liberado após o encerramento do evento.</p>
+        <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($ativo && !$qrResp['erro'] && !empty($qrResp['corpo']['imagemBase64'])): ?>

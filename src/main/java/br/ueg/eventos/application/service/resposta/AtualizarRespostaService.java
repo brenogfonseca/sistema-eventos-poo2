@@ -23,6 +23,9 @@ public class AtualizarRespostaService implements AtualizarRespostaPort {
         }
 
         Resposta resposta = respostaExistente.get();
+        if (comando.idExecutor == null || !resposta.getIdUsuario().equals(comando.idExecutor)) {
+            throw new RegraNegocioException("Só é permitido alterar a própria resposta.");
+        }
         // Utiliza o método de domínio que já contém a validação (não pode ser vazio)
         resposta.alterarValor(comando.valor);
 

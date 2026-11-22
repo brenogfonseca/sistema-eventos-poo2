@@ -48,8 +48,18 @@ public class CadastrarAtividadeService
         }
 
         autorizar(idExecutor, evento.getId());
+        validarPeriodoNoEvento(atividade, evento);
 
         return atividadeRepository.salvar(atividade);
+    }
+
+    static void validarPeriodoNoEvento(Atividade atividade, Evento evento) {
+        java.time.LocalDateTime inicio = java.time.LocalDateTime.of(atividade.getData(), atividade.getHoraInicio());
+        java.time.LocalDateTime fim = java.time.LocalDateTime.of(atividade.getData(), atividade.getHoraFim());
+        if (fim.isBefore(inicio)) fim = fim.plusDays(1);
+        if (inicio.isBefore(evento.getPeriodo().getInicio()) || fim.isAfter(evento.getPeriodo().getFim())) {
+            throw new RegraNegocioException("O horário da atividade deve estar dentro do período do evento.");
+        }
     }
 
     private void autorizar(Integer idExecutor, Long idEvento) {

@@ -51,7 +51,8 @@ public class InMemoryUsuarioRepository implements UsuarioRepositoryPort {
                     usuario.getNome(),
                     usuario.getEmail(),
                     usuario.getSenhaHash(),
-                    usuario.getPerfil()
+                    usuario.getPerfil(),
+                    usuario.getCpf()
             );
 
             usuarios.put(novoId, usuarioSalvo);

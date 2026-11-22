@@ -15,6 +15,14 @@ public interface CriarEventoPort {
         public final boolean certificado;
         public final int frequenciaMinima;
         public final boolean inscricoesAbertas;
+        public final String modalidade;
+        public final String status;
+        public final String fusoHorario;
+        public final LocalDateTime prazoCancelamento;
+        public final String criterioFrequenciaCertificado;
+        public final int frequenciaMinimaMinutos;
+        public final String modoCargaHorariaCertificado;
+        public final int cargaHorariaFixaMinutos;
 
         // Construtor original para compatibilidade
         public ComandoCriarEvento(String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim, int capacidade) {
@@ -29,6 +37,32 @@ public interface CriarEventoPort {
         public ComandoCriarEvento(String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim,
                                   int capacidade, Integer idUsuarioCriador, boolean certificado, int frequenciaMinima,
                                   boolean inscricoesAbertas) {
+            this(titulo, descricao, inicio, fim, capacidade, idUsuarioCriador, certificado,
+                    frequenciaMinima, inscricoesAbertas, "PRESENCIAL", "PUBLICADO", "America/Sao_Paulo");
+        }
+
+        public ComandoCriarEvento(String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim,
+                                  int capacidade, Integer idUsuarioCriador, boolean certificado, int frequenciaMinima,
+                                  boolean inscricoesAbertas, String modalidade, String status, String fusoHorario) {
+            this(titulo, descricao, inicio, fim, capacidade, idUsuarioCriador, certificado, frequenciaMinima,
+                    inscricoesAbertas, modalidade, status, fusoHorario, null);
+        }
+
+        public ComandoCriarEvento(String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim,
+                                  int capacidade, Integer idUsuarioCriador, boolean certificado, int frequenciaMinima,
+                                  boolean inscricoesAbertas, String modalidade, String status, String fusoHorario,
+                                  LocalDateTime prazoCancelamento) {
+            this(titulo, descricao, inicio, fim, capacidade, idUsuarioCriador, certificado, frequenciaMinima,
+                    inscricoesAbertas, modalidade, status, fusoHorario, prazoCancelamento,
+                    "PERCENTUAL", 0, "DINAMICA", 0);
+        }
+
+        public ComandoCriarEvento(String titulo, String descricao, LocalDateTime inicio, LocalDateTime fim,
+                                  int capacidade, Integer idUsuarioCriador, boolean certificado, int frequenciaMinima,
+                                  boolean inscricoesAbertas, String modalidade, String status, String fusoHorario,
+                                  LocalDateTime prazoCancelamento, String criterioFrequenciaCertificado,
+                                  int frequenciaMinimaMinutos, String modoCargaHorariaCertificado,
+                                  int cargaHorariaFixaMinutos) {
             this.titulo = titulo;
             this.descricao = descricao;
             this.inicio = inicio;
@@ -38,6 +72,14 @@ public interface CriarEventoPort {
             this.certificado = certificado;
             this.frequenciaMinima = frequenciaMinima;
             this.inscricoesAbertas = inscricoesAbertas;
+            this.modalidade = modalidade;
+            this.status = status;
+            this.fusoHorario = fusoHorario;
+            this.prazoCancelamento = prazoCancelamento;
+            this.criterioFrequenciaCertificado = criterioFrequenciaCertificado;
+            this.frequenciaMinimaMinutos = frequenciaMinimaMinutos;
+            this.modoCargaHorariaCertificado = modoCargaHorariaCertificado;
+            this.cargaHorariaFixaMinutos = cargaHorariaFixaMinutos;
         }
     }
 

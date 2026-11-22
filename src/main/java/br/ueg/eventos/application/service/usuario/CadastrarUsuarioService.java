@@ -5,6 +5,7 @@ import br.ueg.eventos.application.port.out.PasswordEncryptor;
 import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Usuario;
+import br.ueg.eventos.domain.model.Perfil;
 
 /**
  * Serviço de aplicação responsável pelo caso de uso de cadastrar um novo usuário.
@@ -32,7 +33,8 @@ public class CadastrarUsuarioService implements CadastrarUsuarioPort {
                 comando.email,
                 comando.senhaLimpa,
                 hashCriptografado,
-                comando.perfil
+                Perfil.USUARIO,
+                comando.cpf
         );
 
         return usuarioRepository.salvar(novoUsuario);

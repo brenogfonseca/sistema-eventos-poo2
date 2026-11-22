@@ -12,10 +12,12 @@ public interface AlterarSenhaUsuarioPort {
      */
     class ComandoAlterarSenha {
         public final Integer idUsuario;
+        public final Integer idExecutor;
         public final String novaSenhaLimpa;
 
-        public ComandoAlterarSenha(Integer idUsuario, String novaSenhaLimpa) {
+        public ComandoAlterarSenha(Integer idUsuario, Integer idExecutor, String novaSenhaLimpa) {
             this.idUsuario = idUsuario;
+            this.idExecutor = idExecutor;
             this.novaSenhaLimpa = novaSenhaLimpa;
         }
     }

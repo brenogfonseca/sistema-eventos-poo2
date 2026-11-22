@@ -8,7 +8,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -157,12 +161,24 @@ public class SqliteFrequenciaRepository extends SqliteRepositorySupport
 
         return new Frequencia(
                 resultSet.getInt("id"),
-                LocalDateTime.parse(resultSet.getString("data_hora")),
+                parseDataHora(resultSet.getString("data_hora")),
                 resultSet.getString("origem"),
                 idResponsavel,
                 resultSet.getInt("presente") == 1,
                 resultSet.getInt("inscricao_id"),
                 resultSet.getString("tipo")
         );
+    }
+
+    private Instant parseDataHora(String valor) {
+        try {
+            return Instant.parse(valor);
+        } catch (DateTimeParseException ignored) {
+            try {
+                return OffsetDateTime.parse(valor).toInstant();
+            } catch (DateTimeParseException legado) {
+                return LocalDateTime.parse(valor).atZone(ZoneId.of("America/Sao_Paulo")).toInstant();
+            }
+        }
     }
 }

@@ -318,6 +318,12 @@ img {
     color: var(--cor-sucesso);
 }
 
+.alerta-aviso {
+    background-color: #fffaf0;
+    border-color: #d69e2e;
+    color: #744210;
+}
+
 .alerta-info {
     background-color: #f0f4ff;
     border-color: var(--cor-primaria);

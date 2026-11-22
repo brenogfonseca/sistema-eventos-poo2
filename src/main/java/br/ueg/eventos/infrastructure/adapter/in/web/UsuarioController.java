@@ -74,7 +74,6 @@ public class UsuarioController {
         // Rotas autenticadas (exigem X-Usuario-Id no header)
         app.get("/usuarios", this::listarUsuarios);
         app.get("/usuarios/{id}", this::buscarPorId);
-        app.get("/usuarios/email/{email}", this::buscarPorEmail);
         app.put("/usuarios/{id}/dados", this::alterarDados);
         app.patch("/usuarios/{id}/senha", this::alterarSenha);
         app.patch("/usuarios/{id}/perfil", this::alterarPerfil);
@@ -90,6 +89,7 @@ public class UsuarioController {
         public String email;
         public String senha;
         public String perfil;
+        public String cpf;
     }
 
     static class AlterarDadosRequest {
@@ -115,10 +115,8 @@ public class UsuarioController {
             exigirCorpoNaoVazio(ctx, "{ \"nome\", \"email\", \"senha\", \"perfil\" }");
 
             CadastrarUsuarioRequest req = ctx.bodyAsClass(CadastrarUsuarioRequest.class);
-            Perfil perfil = parsePerfil(req.perfil);
-
             Usuario criado = cadastrarUsuarioPort.executar(
-                    new ComandoCadastrarUsuario(req.nome, req.email, req.senha, perfil));
+                    new ComandoCadastrarUsuario(req.nome, req.email, req.senha, Perfil.USUARIO, req.cpf));
 
             ctx.status(HttpStatus.CREATED).json(new UsuarioResponse(criado));
 
@@ -220,12 +218,13 @@ public class UsuarioController {
     private void alterarSenha(Context ctx) {
         try {
             Integer idAlvo = Integer.parseInt(ctx.pathParam("id"));
+            Integer idExecutor = extrairIdExecutor(ctx);
             exigirCorpoNaoVazio(ctx, "{ \"novaSenha\": \"...\" }");
 
             AlterarSenhaRequest req = ctx.bodyAsClass(AlterarSenhaRequest.class);
 
             Usuario atualizado = alterarSenhaUsuarioPort.executar(
-                    new ComandoAlterarSenha(idAlvo, req.novaSenha));
+                    new ComandoAlterarSenha(idAlvo, idExecutor, req.novaSenha));
 
             ctx.status(HttpStatus.OK).json(new UsuarioResponse(atualizado));
 

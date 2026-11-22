@@ -18,11 +18,21 @@ public class Atividade {
     private int vagas;
     private String tipo;
     private TipoFrequenciaEnum tipoFrequencia;
+    private MetodoIdentificacaoCheckinEnum metodoIdentificacaoCheckin;
     private Trilha trilha;
+    private String descricao;
 
     public Atividade(String nome, Long eventoId, Local local, LocalTime horaInicio, LocalTime horaFim,
                      LocalDate data, boolean controlaVagas, int vagas, String tipo, 
                      TipoFrequenciaEnum tipoFrequencia, Trilha trilha) {
+        this(nome, eventoId, local, horaInicio, horaFim, data, controlaVagas, vagas,
+                tipo, tipoFrequencia, trilha, MetodoIdentificacaoCheckinEnum.QR);
+    }
+
+    public Atividade(String nome, Long eventoId, Local local, LocalTime horaInicio, LocalTime horaFim,
+                     LocalDate data, boolean controlaVagas, int vagas, String tipo,
+                     TipoFrequenciaEnum tipoFrequencia, Trilha trilha,
+                     MetodoIdentificacaoCheckinEnum metodoIdentificacaoCheckin) {
         setNome(nome);
         if (eventoId == null || eventoId <= 0) {
             throw new RegraNegocioException("A atividade deve pertencer a um evento válido.");
@@ -32,6 +42,9 @@ public class Atividade {
         }
         if (tipoFrequencia == null) {
             throw new RegraNegocioException("Selecione um critério de presença para a atividade.");
+        }
+        if (metodoIdentificacaoCheckin == null) {
+            throw new RegraNegocioException("Selecione como a equipe identificará os participantes.");
         }
         if (vagas < 0) {
             throw new RegraNegocioException("O número de vagas não pode ser negativo.");
@@ -45,13 +58,24 @@ public class Atividade {
         this.vagas = vagas;
         this.tipo = tipo;
         this.tipoFrequencia = tipoFrequencia;
+        this.metodoIdentificacaoCheckin = metodoIdentificacaoCheckin;
         this.trilha = trilha;
+        this.descricao = null;
     }
 
     public Atividade(Long id, String nome, Long eventoId, Local local, LocalTime horaInicio, LocalTime horaFim,
                      LocalDate data, boolean controlaVagas, int vagas, String tipo, 
                      TipoFrequenciaEnum tipoFrequencia, Trilha trilha) {
         this(nome, eventoId, local, horaInicio, horaFim, data, controlaVagas, vagas, tipo, tipoFrequencia, trilha);
+        this.id = id;
+    }
+
+    public Atividade(Long id, String nome, Long eventoId, Local local, LocalTime horaInicio, LocalTime horaFim,
+                     LocalDate data, boolean controlaVagas, int vagas, String tipo,
+                     TipoFrequenciaEnum tipoFrequencia, Trilha trilha,
+                     MetodoIdentificacaoCheckinEnum metodoIdentificacaoCheckin) {
+        this(nome, eventoId, local, horaInicio, horaFim, data, controlaVagas, vagas,
+                tipo, tipoFrequencia, trilha, metodoIdentificacaoCheckin);
         this.id = id;
     }
 
@@ -90,5 +114,13 @@ public class Atividade {
     public int getVagas() { return vagas; }
     public String getTipo() { return tipo; }
     public TipoFrequenciaEnum getTipoFrequencia() { return tipoFrequencia; }
+    public MetodoIdentificacaoCheckinEnum getMetodoIdentificacaoCheckin() { return metodoIdentificacaoCheckin; }
     public Trilha getTrilha() { return trilha; }
+    public String getDescricao() { return descricao; }
+    public void alterarDescricao(String descricao) {
+        if (descricao != null && descricao.length() > 4000) {
+            throw new RegraNegocioException("A descrição da atividade deve ter no máximo 4000 caracteres.");
+        }
+        this.descricao = descricao == null || descricao.isBlank() ? null : descricao.trim();
+    }
 }

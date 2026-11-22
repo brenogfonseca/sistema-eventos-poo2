@@ -5,14 +5,7 @@
  * FLUXO DIDÁTICO:
  *   1. O formulário HTML coleta o e-mail digitado pelo usuário.
  *   2. Ao submeter, este PHP captura o campo via $_POST.
- *   3. Chama chamar_api('GET', '/usuarios/email/{email}') para buscar o usuário.
- *   4. Se encontrado, compara a senha digitada (via hash SHA-256) com o hash
- *      armazenado na API.
- *   5. Se a senha bater, salva os dados do usuário em $_SESSION e redireciona.
- *
- * ATENÇÃO: A API não possui endpoint de login dedicado. Simulamos o login
- * buscando o usuário por e-mail e comparando o hash da senha localmente.
- * Em produção, o correto seria ter um endpoint POST /login na API.
+ * A API verifica a senha e retorna uma sessão bearer assinada e com expiração.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 require_once __DIR__ . '/api_service.php';
@@ -32,43 +25,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 1. Captura os dados do formulário
     $email = trim($_POST['email'] ?? '');
-    $senha = trim($_POST['senha'] ?? '');
+    $senha = (string) ($_POST['senha'] ?? '');
 
     // 2. Validação básica no front-end antes de chamar a API
     if (empty($email) || empty($senha)) {
         $erro = 'Preencha o e-mail e a senha.';
 
     } else {
-        // 3. Busca o usuário na API pelo e-mail
-        //    Endpoint: GET /usuarios/email/{email}
-        $resultado = chamar_api('GET', '/usuarios/email/' . urlencode($email));
+        // A senha é verificada pelo back-end; o hash nunca sai da API.
+        $resultado = chamar_api('POST', '/auth/login', ['email' => $email, 'senha' => $senha]);
 
         if ($resultado['erro']) {
             // A API retornou erro (ex: 404 usuário não encontrado)
             $erro = 'E-mail ou senha incorretos.';
 
         } else {
-            // 4. Usuário encontrado! Verificamos a senha.
-            //    A API armazena o hash SHA-256 da senha.
-            //    Calculamos o hash do que o usuário digitou e comparamos.
             $usuario = $resultado['corpo'];
-
-            // Verificamos se o campo senhaHash veio na resposta
-            // Nota: por segurança, o UsuarioController omite senhaHash na resposta.
-            // Portanto, a verificação de senha via front-end não é possível diretamente.
-            // O login "simples" abaixo assume que qualquer retorno 200 com o e-mail
-            // correto constitui autenticação (para fins acadêmicos).
-            // Em produção, adicionar um endpoint POST /login na API Java.
-
-            if (isset($usuario['id']) && isset($usuario['email'])) {
-                // 5. Salva os dados do usuário na sessão PHP
+            if (isset($usuario['id'], $usuario['email'], $usuario['token'], $usuario['expiraEm'])) {
+                session_regenerate_id(true);
                 $_SESSION['usuario'] = [
                     'id'     => $usuario['id'],
                     'nome'   => $usuario['nome'],
                     'email'  => $usuario['email'],
                     'perfil' => $usuario['perfil'],
+                    'token'  => $usuario['token'],
+                    'expiraEm' => $usuario['expiraEm'],
                 ];
-                // 6. Redireciona para a página de eventos
                 header('Location: eventos.php');
                 exit;
             } else {

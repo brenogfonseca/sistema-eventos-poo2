@@ -57,6 +57,7 @@ public class AtualizarAtividadeService
         }
 
         autorizar(idExecutor, evento.getId());
+        CadastrarAtividadeService.validarPeriodoNoEvento(atividade, evento);
 
         if (atividade.getId() != null
                 && !id.equals(atividade.getId())) {

@@ -8,9 +8,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = trim($_POST['token'] ?? '');
     $idEvento = (int)($_POST['id_evento'] ?? 0);
     $idAtividade = (int)($_POST['id_atividade'] ?? 0);
+    $idInscricaoEvento = (int)($_POST['id_inscricao_evento'] ?? 0);
     $acao = trim($_POST['acao_presenca'] ?? '');
-    if ($token === '' || $idAtividade <= 0 || $acao === '') {
-        $_SESSION['checkin_qr_feedback'] = ['sucesso' => false, 'mensagem' => 'Escolha a atividade, a ação e leia um QR Code.'];
+    if ($idAtividade <= 0 || $acao === '') {
+        $_SESSION['checkin_qr_feedback'] = ['sucesso' => false, 'mensagem' => 'Escolha a atividade e a ação de presença.'];
+    } elseif ($idInscricaoEvento > 0) {
+        $resultado = chamar_api('POST', '/frequencias/checkin-participante',
+            ['idInscricaoEvento' => $idInscricaoEvento, 'idAtividade' => $idAtividade, 'acao' => $acao], headers_autenticados());
+        $_SESSION['checkin_qr_feedback'] = $resultado['erro']
+            ? ['sucesso' => false, 'mensagem' => $resultado['msg_erro']]
+            : ['sucesso' => true, 'mensagem' => 'Presença registrada para a atividade selecionada.'];
+    } elseif ($token === '') {
+        $_SESSION['checkin_qr_feedback'] = ['sucesso' => false, 'mensagem' => 'Leia o QR Code do participante.'];
     } else {
         $resultado = chamar_api('POST', '/frequencias/checkin-qr',
             ['token' => $token, 'idAtividade' => $idAtividade, 'acao' => $acao], headers_autenticados());
@@ -24,29 +33,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $feedback = $_SESSION['checkin_qr_feedback'] ?? null;
 unset($_SESSION['checkin_qr_feedback']);
-$eventosResp = chamar_api('GET', '/eventos', null, headers_autenticados());
-$eventos = $eventosResp['erro'] ? [] : ($eventosResp['corpo'] ?? []);
+$validasResp = chamar_api('GET', '/frequencias/atividades-validaveis', null, headers_autenticados());
+$atividadesValidaveis = $validasResp['erro'] ? [] : ($validasResp['corpo'] ?? []);
 $eventosPermitidos = [];
-foreach ($eventos as $evento) {
-    if (eh_administrador() || in_array($idUsuario, $evento['organizadoresIds'] ?? [])) $eventosPermitidos[] = $evento;
+foreach ($atividadesValidaveis as $item) {
+    $eventoId = (int)($item['idEvento'] ?? 0);
+    if ($eventoId > 0) $eventosPermitidos[$eventoId] = ['id' => $eventoId, 'titulo' => $item['tituloEvento'] ?? ('Evento #' . $eventoId)];
 }
+$eventosPermitidos = array_values($eventosPermitidos);
 $idEvento = (int)($_GET['evento_id'] ?? 0);
 $eventoSelecionado = null;
 foreach ($eventosPermitidos as $evento) if ((int)($evento['id'] ?? 0) === $idEvento) $eventoSelecionado = $evento;
 if (!$eventoSelecionado && $eventosPermitidos) { $eventoSelecionado = $eventosPermitidos[0]; $idEvento = (int)$eventoSelecionado['id']; }
-$atividadesResp = $idEvento ? chamar_api('GET', "/atividades/evento/{$idEvento}") : ['erro' => false, 'corpo' => []];
-$atividades = $atividadesResp['erro'] ? [] : ($atividadesResp['corpo'] ?? []);
+$atividades = array_values(array_filter($atividadesValidaveis,
+    static fn($item) => (int)($item['idEvento'] ?? 0) === $idEvento));
 $idAtividade = (int)($_GET['atividade_id'] ?? 0);
-$acaoSelecionada = $_GET['acao'] ?? '';
+$atividadeSelecionada = null;
+foreach ($atividades as $item) if ((int)($item['idAtividade'] ?? 0) === $idAtividade) $atividadeSelecionada = $item;
+if (!$atividadeSelecionada && $atividades) { $atividadeSelecionada = $atividades[0]; $idAtividade = (int)$atividadeSelecionada['idAtividade']; }
+$termoBusca = trim($_GET['q'] ?? '');
+$participantes = [];
+if ($atividadeSelecionada && ($atividadeSelecionada['metodoIdentificacaoCheckin'] ?? 'QR') === 'NOME_CPF' && $termoBusca !== '') {
+    $buscaResp = chamar_api('GET', "/atividades/{$idAtividade}/participantes-checkin?q=" . rawurlencode($termoBusca), null, headers_autenticados());
+    if (!$buscaResp['erro']) $participantes = $buscaResp['corpo'] ?? [];
+}
 
 ob_start();
 ?>
-<div class="secao-cabecalho"><div><h1 class="secao-titulo">Leitor de QR Code</h1><p class="secao-subtitulo">O organizador escolhe a atividade e valida a presença do participante com o QR único do evento.</p></div></div>
+<div class="secao-cabecalho"><div><h1 class="secao-titulo">Validação de presença</h1><p class="secao-subtitulo">Organizadores e colaboradores podem registrar presença nas atividades autorizadas. Somente organizadores corrigem presença ou falta.</p></div></div>
 
 <?php if ($feedback): ?><div class="alerta <?= $feedback['sucesso'] ? 'alerta-sucesso' : 'alerta-erro' ?>"><?= htmlspecialchars($feedback['mensagem'], ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
 
 <?php if (!$eventosPermitidos): ?>
-    <div class="card"><p>Você não está vinculado como organizador a nenhum evento.</p></div>
+    <div class="card"><p>Você não tem atividades autorizadas para validar. O organizador do evento precisa vincular você às atividades correspondentes.</p></div>
 <?php else: ?>
 <div class="card" style="max-width:760px">
     <h2>1. Selecione evento e atividade</h2>
@@ -57,35 +76,54 @@ ob_start();
             </select>
         </div>
         <div class="form-grupo"><label for="atividade_id">Atividade</label>
-            <select name="atividade_id" id="atividade_id" required>
-                <?php foreach ($atividades as $atividade): ?><option value="<?= (int)$atividade['id'] ?>" data-politica="<?= htmlspecialchars($atividade['tipoFrequencia'] ?? 'CHECKIN') ?>" <?= (int)$atividade['id'] === $idAtividade ? 'selected' : '' ?>><?= htmlspecialchars($atividade['nome'] ?? ('Atividade #' . $atividade['id'])) ?> — <?= htmlspecialchars($atividade['tipoFrequencia'] ?? 'CHECKIN') ?></option><?php endforeach; ?>
+            <select name="atividade_id" id="atividade_id" required onchange="this.form.submit()">
+                <?php foreach ($atividades as $atividade): ?><option value="<?= (int)$atividade['idAtividade'] ?>" data-politica="<?= htmlspecialchars($atividade['tipoFrequencia'] ?? 'CHECKIN') ?>" <?= (int)$atividade['idAtividade'] === $idAtividade ? 'selected' : '' ?>><?= htmlspecialchars($atividade['nomeAtividade'] ?? ('Atividade #' . $atividade['idAtividade'])) ?> — <?= htmlspecialchars($atividade['tipoFrequencia'] ?? 'CHECKIN') ?></option><?php endforeach; ?>
             </select>
         </div>
         <noscript><button class="btn btn-secundario" type="submit">Carregar atividades</button></noscript>
     </form>
 
-    <?php if (!$atividades): ?><p class="text-muted">Este evento ainda não possui atividades.</p><?php else: ?>
+    <?php if (!$atividadeSelecionada): ?><p class="text-muted">Não há atividades atribuídas a você neste evento.</p><?php else: ?>
     <h2>2. Valide a presença</h2>
-    <form method="POST" action="checkin_qr.php" id="form-checkin-qr">
-        <input type="hidden" name="id_evento" value="<?= $idEvento ?>">
-        <input type="hidden" name="id_atividade" id="id_atividade_post" value="<?= $idAtividade ?: (int)$atividades[0]['id'] ?>">
-        <div class="form-grupo"><label for="acao_presenca">Ação</label>
-            <select name="acao_presenca" id="acao_presenca" required>
-                <option value="CHECKIN">Registrar check-in</option>
-                <option value="ENTRADA">Registrar entrada</option>
-                <option value="SAIDA">Registrar saída</option>
-                <option value="PRESENTE">Validar como presente (manual)</option>
-                <option value="AUSENTE">Validar como ausente (manual)</option>
-            </select>
-        </div>
-        <button type="button" class="btn btn-primario" id="iniciar-camera">Abrir câmera</button>
-        <p id="status-camera" class="text-muted" aria-live="polite"></p>
-        <video id="video-qr" autoplay playsinline style="display:none;width:100%;max-height:420px;background:#111;border-radius:8px"></video>
-        <div class="form-grupo mt-md"><label for="token">Token (preenchido pela câmera ou colado manualmente)</label>
-            <textarea id="token" name="token" rows="3" required placeholder="Leia o QR Code do participante ou cole o token"></textarea>
-        </div>
-        <button type="submit" class="btn btn-sucesso">Confirmar presença nesta atividade</button>
-    </form>
+    <p>Atividade: <strong><?= htmlspecialchars($atividadeSelecionada['nomeAtividade'] ?? '') ?></strong> · <?= htmlspecialchars($atividadeSelecionada['data'] ?? '') ?> <?= htmlspecialchars($atividadeSelecionada['horaInicio'] ?? '') ?>–<?= htmlspecialchars($atividadeSelecionada['horaFim'] ?? '') ?></p>
+    <p>Método: <strong><?= ($atividadeSelecionada['metodoIdentificacaoCheckin'] ?? 'QR') === 'QR' ? 'QR Code' : 'Busca por nome ou CPF' ?></strong></p>
+    <?php if (($atividadeSelecionada['metodoIdentificacaoCheckin'] ?? 'QR') === 'QR'): ?>
+        <form method="POST" action="checkin_qr.php" id="form-checkin-qr">
+            <input type="hidden" name="id_evento" value="<?= $idEvento ?>">
+            <input type="hidden" name="id_atividade" id="id_atividade_post" value="<?= $idAtividade ?>">
+            <div class="form-grupo"><label for="acao_presenca">Ação</label><select name="acao_presenca" id="acao_presenca" required>
+                <?php if (($atividadeSelecionada['tipoFrequencia'] ?? '') === 'CHECKIN'): ?><option value="CHECKIN">Registrar check-in</option>
+                <?php elseif (($atividadeSelecionada['tipoFrequencia'] ?? '') === 'ENTRADA_SAIDA'): ?><option value="ENTRADA">Registrar entrada</option><option value="SAIDA">Registrar saída</option>
+                <?php else: ?><option value="PRESENTE">Registrar presença</option><?php endif; ?>
+            </select></div>
+            <button type="button" class="btn btn-primario" id="iniciar-camera">Abrir câmera</button>
+            <p id="status-camera" class="text-muted" aria-live="polite"></p>
+            <video id="video-qr" autoplay playsinline style="display:none;width:100%;max-height:420px;background:#111;border-radius:8px"></video>
+            <div class="form-grupo mt-md"><label for="token">Token QR</label><textarea id="token" name="token" rows="3" required placeholder="Leia o QR Code do participante ou cole o token"></textarea></div>
+            <button type="submit" class="btn btn-sucesso">Registrar presença</button>
+        </form>
+    <?php else: ?>
+        <form method="GET" action="checkin_qr.php" class="form-linha">
+            <input type="hidden" name="evento_id" value="<?= $idEvento ?>"><input type="hidden" name="atividade_id" value="<?= $idAtividade ?>">
+            <div class="form-grupo"><label for="q">Buscar participante por nome ou CPF</label><input id="q" name="q" value="<?= htmlspecialchars($termoBusca) ?>" minlength="2" required></div>
+            <button class="btn btn-secundario" type="submit">Buscar</button>
+        </form>
+        <?php if ($termoBusca !== '' && !$participantes): ?><p class="text-muted">Nenhum inscrito ativo desta atividade corresponde à busca.</p><?php endif; ?>
+        <?php if ($participantes): ?>
+            <form method="POST" action="checkin_qr.php">
+                <input type="hidden" name="id_evento" value="<?= $idEvento ?>"><input type="hidden" name="id_atividade" value="<?= $idAtividade ?>">
+                <div class="form-grupo"><label for="id_inscricao_evento">Participante</label><select name="id_inscricao_evento" id="id_inscricao_evento" required>
+                    <?php foreach ($participantes as $participante): ?><option value="<?= (int)$participante['idInscricaoEvento'] ?>"><?= htmlspecialchars($participante['nome']) ?> — <?= htmlspecialchars($participante['cpfMascarado'] ?? 'CPF não cadastrado') ?></option><?php endforeach; ?>
+                </select></div>
+                <div class="form-grupo"><label for="acao_presenca">Ação</label><select name="acao_presenca" id="acao_presenca" required>
+                    <?php if (($atividadeSelecionada['tipoFrequencia'] ?? '') === 'CHECKIN'): ?><option value="CHECKIN">Registrar check-in</option>
+                    <?php elseif (($atividadeSelecionada['tipoFrequencia'] ?? '') === 'ENTRADA_SAIDA'): ?><option value="ENTRADA">Registrar entrada</option><option value="SAIDA">Registrar saída</option>
+                    <?php else: ?><option value="PRESENTE">Registrar presença</option><?php endif; ?>
+                </select></div>
+                <button type="submit" class="btn btn-sucesso">Registrar presença</button>
+            </form>
+        <?php endif; ?>
+    <?php endif; ?>
     <?php endif; ?>
 </div>
 <?php endif; ?>
@@ -100,7 +138,7 @@ ob_start();
     function ajustarAcoes() {
         const politica = atividade.selectedOptions[0]?.dataset.politica || 'CHECKIN';
         const permitidas = politica === 'CHECKIN' ? ['CHECKIN']
-            : politica === 'ENTRADA_SAIDA' ? ['ENTRADA', 'SAIDA'] : ['PRESENTE', 'AUSENTE'];
+            : politica === 'ENTRADA_SAIDA' ? ['ENTRADA', 'SAIDA'] : ['PRESENTE'];
         for (const option of opcoes) option.hidden = !permitidas.includes(option.value);
         if (!permitidas.includes(acao.value)) acao.value = permitidas[0];
         idPost.value = atividade.value;

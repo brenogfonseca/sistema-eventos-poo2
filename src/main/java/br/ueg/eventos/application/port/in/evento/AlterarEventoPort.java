@@ -22,6 +22,14 @@ public interface AlterarEventoPort {
         public final boolean certificado;
         public final int frequenciaMinima;
         public final boolean inscricoesAbertas;
+        public final String modalidade;
+        public final String status;
+        public final String fusoHorario;
+        public final LocalDateTime prazoCancelamento;
+        public final String criterioFrequenciaCertificado;
+        public final int frequenciaMinimaMinutos;
+        public final String modoCargaHorariaCertificado;
+        public final int cargaHorariaFixaMinutos;
 
         public ComandoAlterarEvento(Long idEvento, String titulo, String descricao,
                                     LocalDateTime inicio, LocalDateTime fim, int capacidade,
@@ -33,6 +41,35 @@ public interface AlterarEventoPort {
                                     LocalDateTime inicio, LocalDateTime fim, int capacidade,
                                     Usuario usuarioExecutor, boolean certificado, int frequenciaMinima,
                                     boolean inscricoesAbertas) {
+            this(idEvento, titulo, descricao, inicio, fim, capacidade, usuarioExecutor, certificado,
+                    frequenciaMinima, inscricoesAbertas, "PRESENCIAL", "PUBLICADO", "America/Sao_Paulo");
+        }
+
+        public ComandoAlterarEvento(Long idEvento, String titulo, String descricao,
+                                    LocalDateTime inicio, LocalDateTime fim, int capacidade,
+                                    Usuario usuarioExecutor, boolean certificado, int frequenciaMinima,
+                                    boolean inscricoesAbertas, String modalidade, String status, String fusoHorario) {
+            this(idEvento, titulo, descricao, inicio, fim, capacidade, usuarioExecutor, certificado,
+                    frequenciaMinima, inscricoesAbertas, modalidade, status, fusoHorario, null);
+        }
+
+        public ComandoAlterarEvento(Long idEvento, String titulo, String descricao,
+                                    LocalDateTime inicio, LocalDateTime fim, int capacidade,
+                                    Usuario usuarioExecutor, boolean certificado, int frequenciaMinima,
+                                    boolean inscricoesAbertas, String modalidade, String status, String fusoHorario,
+                                    LocalDateTime prazoCancelamento) {
+            this(idEvento, titulo, descricao, inicio, fim, capacidade, usuarioExecutor, certificado,
+                    frequenciaMinima, inscricoesAbertas, modalidade, status, fusoHorario, prazoCancelamento,
+                    "PERCENTUAL", 0, "DINAMICA", 0);
+        }
+
+        public ComandoAlterarEvento(Long idEvento, String titulo, String descricao,
+                                    LocalDateTime inicio, LocalDateTime fim, int capacidade,
+                                    Usuario usuarioExecutor, boolean certificado, int frequenciaMinima,
+                                    boolean inscricoesAbertas, String modalidade, String status, String fusoHorario,
+                                    LocalDateTime prazoCancelamento, String criterioFrequenciaCertificado,
+                                    int frequenciaMinimaMinutos, String modoCargaHorariaCertificado,
+                                    int cargaHorariaFixaMinutos) {
             this.idEvento = idEvento;
             this.titulo = titulo;
             this.descricao = descricao;
@@ -43,6 +80,14 @@ public interface AlterarEventoPort {
             this.certificado = certificado;
             this.frequenciaMinima = frequenciaMinima;
             this.inscricoesAbertas = inscricoesAbertas;
+            this.modalidade = modalidade;
+            this.status = status;
+            this.fusoHorario = fusoHorario;
+            this.prazoCancelamento = prazoCancelamento;
+            this.criterioFrequenciaCertificado = criterioFrequenciaCertificado;
+            this.frequenciaMinimaMinutos = frequenciaMinimaMinutos;
+            this.modoCargaHorariaCertificado = modoCargaHorariaCertificado;
+            this.cargaHorariaFixaMinutos = cargaHorariaFixaMinutos;
         }
     }
 

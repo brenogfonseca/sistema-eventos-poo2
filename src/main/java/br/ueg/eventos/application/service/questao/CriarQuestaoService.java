@@ -15,7 +15,8 @@ public class CriarQuestaoService implements CriarQuestaoPort {
     @Override
     public Questao executar(ComandoCriarQuestao comando) {
         Integer idQuestionario = comando.idQuestionario != null ? comando.idQuestionario.intValue() : null;
-        Questao questao = new Questao(comando.enunciado, comando.tipo, idQuestionario);
+        Questao questao = new Questao(comando.enunciado, comando.tipo, idQuestionario,
+                comando.opcoes, comando.escalaMinima, comando.escalaMaxima);
         return questaoRepository.salvar(questao);
     }
 }

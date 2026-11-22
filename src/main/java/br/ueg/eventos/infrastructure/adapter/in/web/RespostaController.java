@@ -6,6 +6,9 @@ import br.ueg.eventos.application.port.in.resposta.BuscarRespostaPort;
 import br.ueg.eventos.application.port.in.resposta.CriarRespostaPort;
 import br.ueg.eventos.application.port.in.resposta.CriarRespostaPort.ComandoCriarResposta;
 import br.ueg.eventos.application.port.in.resposta.RemoverRespostaPort;
+import br.ueg.eventos.application.port.out.QuestaoRepositoryPort;
+import br.ueg.eventos.application.port.out.QuestionarioRepositoryPort;
+import br.ueg.eventos.domain.exception.AcessoNegadoException;
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 import br.ueg.eventos.domain.model.Resposta;
 import io.javalin.Javalin;
@@ -20,16 +23,25 @@ public class RespostaController {
     private final AtualizarRespostaPort atualizarRespostaPort;
     private final RemoverRespostaPort removerRespostaPort;
     private final BuscarRespostaPort buscarRespostasPorQuestaoPort;
+    private final QuestaoRepositoryPort questoes;
+    private final QuestionarioRepositoryPort questionarios;
+    private final EventoAuthorization autorizacao;
 
     public RespostaController(
             CriarRespostaPort criarRespostaPort,
             AtualizarRespostaPort atualizarRespostaPort,
             RemoverRespostaPort removerRespostaPort,
-            BuscarRespostaPort buscarRespostasPorQuestaoPort) {
+            BuscarRespostaPort buscarRespostasPorQuestaoPort,
+            QuestaoRepositoryPort questoes,
+            QuestionarioRepositoryPort questionarios,
+            EventoAuthorization autorizacao) {
         this.criarRespostaPort = criarRespostaPort;
         this.atualizarRespostaPort = atualizarRespostaPort;
         this.removerRespostaPort = removerRespostaPort;
         this.buscarRespostasPorQuestaoPort = buscarRespostasPorQuestaoPort;
+        this.questoes = questoes;
+        this.questionarios = questionarios;
+        this.autorizacao = autorizacao;
     }
 
     public void registerRoutes(Javalin app) {
@@ -42,7 +54,6 @@ public class RespostaController {
     // DTO para Criação (recebe a questão, usuário e o valor)
     static class CriarRespostaRequest {
         public Long idQuestao;
-        public Integer idUsuario;
         public String valor;
     }
 
@@ -57,13 +68,15 @@ public class RespostaController {
 
             ComandoCriarResposta comando = new ComandoCriarResposta(
                 request.idQuestao,
-                request.idUsuario,
+                autorizacao.usuarioAutenticado(ctx),
                 request.valor
             );
 
             Resposta respostaCriada = criarRespostaPort.executar(comando);
             ctx.status(HttpStatus.CREATED).json(respostaCriada);
 
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (RegraNegocioException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result(e.getMessage());
         } catch (Exception e) {
@@ -78,12 +91,15 @@ public class RespostaController {
 
             ComandoAtualizarResposta comando = new ComandoAtualizarResposta(
                 id,
-                request.valor
+                request.valor,
+                autorizacao.usuarioAutenticado(ctx)
             );
 
             Resposta respostaAtualizada = atualizarRespostaPort.executar(comando);
             ctx.status(HttpStatus.OK).json(respostaAtualizada);
 
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (NumberFormatException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result("ID da resposta inválido.");
         } catch (RegraNegocioException e) {
@@ -96,8 +112,10 @@ public class RespostaController {
     private void removerResposta(Context ctx) {
         try {
             Long id = Long.valueOf(ctx.pathParam("id"));
-            removerRespostaPort.executar(id);
+            removerRespostaPort.executar(id, autorizacao.usuarioAutenticado(ctx));
             ctx.status(HttpStatus.NO_CONTENT);
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (NumberFormatException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result("ID da resposta inválido.");
         } catch (Exception e) {
@@ -108,13 +126,26 @@ public class RespostaController {
     private void buscarPorQuestao(Context ctx) {
         try {
             Long idQuestao = Long.valueOf(ctx.pathParam("idQuestao"));
+            autorizacao.exigirGerenciadorDaQuestao(ctx, idQuestao);
             List<Resposta> respostas = buscarRespostasPorQuestaoPort.executar(idQuestao);
-            
-            ctx.status(HttpStatus.OK).json(respostas);
+            Questao questao = questoes.buscarPorId(idQuestao)
+                    .orElseThrow(() -> new RegraNegocioException("Questão não encontrada."));
+            var questionario = questionarios.buscarPorId(questao.getIdQuestionario().longValue())
+                    .orElseThrow(() -> new RegraNegocioException("Questionário não encontrado."));
+            if (questionario.isAnonimo()) {
+                ctx.status(HttpStatus.OK).json(respostas.stream()
+                        .map(r -> new RespostaAnonima(r.getId(), r.getValor())).toList());
+            } else {
+                ctx.status(HttpStatus.OK).json(respostas);
+            }
+        } catch (AcessoNegadoException e) {
+            ctx.status(HttpStatus.FORBIDDEN).result(e.getMessage());
         } catch (NumberFormatException e) {
             ctx.status(HttpStatus.BAD_REQUEST).result("ID da questão inválido.");
         } catch (Exception e) {
             ctx.status(HttpStatus.INTERNAL_SERVER_ERROR).result("Erro interno: " + e.getMessage());
         }
     }
+
+    public record RespostaAnonima(Integer id, String valor) { }
 }

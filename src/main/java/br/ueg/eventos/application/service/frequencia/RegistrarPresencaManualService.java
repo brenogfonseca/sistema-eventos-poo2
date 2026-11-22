@@ -17,7 +17,7 @@ import br.ueg.eventos.domain.model.TipoFrequenciaEnum;
 import br.ueg.eventos.domain.model.Usuario;
 
 import java.time.Clock;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /** Marca manualmente a presença com responsável e horário para auditoria. */
 public class RegistrarPresencaManualService implements RegistrarPresencaManualPort {
@@ -36,7 +36,7 @@ public class RegistrarPresencaManualService implements RegistrarPresencaManualPo
                                           VinculoOrganizadorRepositoryPort vinculoOrganizadorRepository,
                                           RegistrarFrequenciaPort registrarFrequenciaPort) {
         this(inscricaoEventoRepository, inscricaoRepository, atividadeRepository, usuarioRepository,
-                vinculoOrganizadorRepository, registrarFrequenciaPort, Clock.systemDefaultZone());
+                vinculoOrganizadorRepository, registrarFrequenciaPort, Clock.systemUTC());
     }
 
     RegistrarPresencaManualService(InscricaoEventoRepositoryPort inscricaoEventoRepository,
@@ -68,20 +68,17 @@ public class RegistrarPresencaManualService implements RegistrarPresencaManualPo
         if (!atividade.getEventoId().equals(inscricaoEvento.getIdEvento())) {
             throw new RegraNegocioException("A atividade não pertence ao evento informado.");
         }
-        if (atividade.getTipoFrequencia() != TipoFrequenciaEnum.MANUAL) {
-            throw new RegraNegocioException("Esta atividade não está configurada para validação manual.");
-        }
         var inscricaoAtividade = inscricaoRepository
                 .buscarAtivaPorInscricaoEventoEAtividade(idInscricaoEvento, idAtividade)
                 .orElseThrow(() -> new RegraNegocioException("O participante não escolheu esta atividade."));
         autorizar(idResponsavel, atividade);
         return registrarFrequenciaPort.executar(new ComandoRegistrarFrequencia(
-                LocalDateTime.ofInstant(clock.instant(), clock.getZone()),
-                "MANUAL",
+                Instant.now(clock),
+                "CORRECAO_ORGANIZADOR",
                 idResponsavel,
                 presente,
                 inscricaoAtividade.getId(),
-                TipoFrequenciaEnum.MANUAL.name()
+                atividade.getTipoFrequencia().name()
         ));
     }
 
