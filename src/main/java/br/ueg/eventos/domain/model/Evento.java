@@ -17,6 +17,10 @@ public class Evento {
     private boolean deletado;
     private boolean certificado;
     private int frequenciaMinima;
+    private String criterioFrequenciaCertificado = "PERCENTUAL";
+    private int frequenciaMinimaMinutos;
+    private String modoCargaHorariaCertificado = "DINAMICA";
+    private int cargaHorariaFixaMinutos;
     private String modalidade;
     private String status;
     private String fusoHorario;
@@ -35,6 +39,8 @@ public class Evento {
         this.status = "RASCUNHO";
         this.fusoHorario = "America/Sao_Paulo";
         this.prazoCancelamento = null;
+        this.frequenciaMinimaMinutos = 0;
+        this.cargaHorariaFixaMinutos = 0;
     }
     
     // Construtor para reconstrução via repositório
@@ -70,6 +76,18 @@ public class Evento {
                 deletado, certificado, frequenciaMinima);
         configurarPublicacao(modalidade, status, fusoHorario);
         configurarPrazoCancelamento(prazoCancelamento);
+    }
+
+    public Evento(Long id, String titulo, String descricao, Periodo periodo, int capacidadeMaxima,
+                  boolean inscricoesAbertas, boolean deletado, boolean certificado, int frequenciaMinima,
+                  String modalidade, String status, String fusoHorario, java.time.LocalDateTime prazoCancelamento,
+                  String criterioFrequenciaCertificado, int frequenciaMinimaMinutos,
+                  String modoCargaHorariaCertificado, int cargaHorariaFixaMinutos) {
+        this(id, titulo, descricao, periodo, capacidadeMaxima, inscricoesAbertas, deletado, certificado,
+                frequenciaMinima, modalidade, status, fusoHorario, prazoCancelamento);
+        configurarPoliticaCertificado(criterioFrequenciaCertificado, frequenciaMinima,
+                frequenciaMinimaMinutos, modoCargaHorariaCertificado, cargaHorariaFixaMinutos);
+        this.certificado = certificado;
     }
 
     // Regras de negócio protegidas nos "Setters" privados (ou públicos quando fizer sentido)
@@ -116,9 +134,31 @@ public class Evento {
     }
 
     public void habilitarCertificado(int frequenciaMinima) {
-        validarFrequenciaMinima(frequenciaMinima);
+        configurarPoliticaCertificado("PERCENTUAL", frequenciaMinima, 0, "DINAMICA", 0);
+    }
+
+    public void configurarPoliticaCertificado(String criterio, int minimoPercentual,
+                                              int minimoMinutos, String modoCarga,
+                                              int cargaFixaMinutos) {
+        String criterioNormalizado = criterio == null ? "" : criterio.trim().toUpperCase();
+        String modoNormalizado = modoCarga == null ? "" : modoCarga.trim().toUpperCase();
+        if (!java.util.Set.of("PERCENTUAL", "HORAS").contains(criterioNormalizado))
+            throw new RegraNegocioException("O critério do certificado deve ser PERCENTUAL ou HORAS.");
+        if (!java.util.Set.of("FIXA", "DINAMICA").contains(modoNormalizado))
+            throw new RegraNegocioException("A carga horária do certificado deve ser FIXA ou DINAMICA.");
+        validarFrequenciaMinima(minimoPercentual);
+        if ("HORAS".equals(criterioNormalizado) && minimoMinutos <= 0)
+            throw new RegraNegocioException("Informe a quantidade mínima de horas de presença.");
+        if ("FIXA".equals(modoNormalizado) && cargaFixaMinutos <= 0)
+            throw new RegraNegocioException("Informe a carga horária fixa do certificado.");
+        if (minimoMinutos < 0 || cargaFixaMinutos < 0)
+            throw new RegraNegocioException("As cargas horárias não podem ser negativas.");
         this.certificado = true;
-        this.frequenciaMinima = frequenciaMinima;
+        this.criterioFrequenciaCertificado = criterioNormalizado;
+        this.frequenciaMinima = minimoPercentual;
+        this.frequenciaMinimaMinutos = minimoMinutos;
+        this.modoCargaHorariaCertificado = modoNormalizado;
+        this.cargaHorariaFixaMinutos = cargaFixaMinutos;
     }
     
     public void desabilitarCertificado() {
@@ -236,6 +276,11 @@ public class Evento {
     public int getFrequenciaMinima() {
         return frequenciaMinima;
     }
+
+    public String getCriterioFrequenciaCertificado() { return criterioFrequenciaCertificado; }
+    public int getFrequenciaMinimaMinutos() { return frequenciaMinimaMinutos; }
+    public String getModoCargaHorariaCertificado() { return modoCargaHorariaCertificado; }
+    public int getCargaHorariaFixaMinutos() { return cargaHorariaFixaMinutos; }
 
     public String getModalidade() { return modalidade; }
 

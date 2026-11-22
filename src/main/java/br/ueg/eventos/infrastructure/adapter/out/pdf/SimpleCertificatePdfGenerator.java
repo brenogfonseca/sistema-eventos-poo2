@@ -20,9 +20,15 @@ public final class SimpleCertificatePdfGenerator implements CertificadoPdfGenera
     public byte[] gerar(String participante, String evento, double frequenciaPercentual,
                         int frequenciaMinima, int cargaHorariaMinutos, LocalDateTime emitidoEm) {
         String percentual = String.format(Locale.forLanguageTag("pt-BR"), "%.2f%%", frequenciaPercentual);
-        String resumo = "com frequência de " + percentual + " (mínimo " + frequenciaMinima
-                + "%) e carga horária de " + cargaHoraria(cargaHorariaMinutos) + ".";
-        return gerarDocumento(participante, evento, "participou do evento", resumo, emitidoEm);
+        String resumo = "com frequência de " + percentual + " (mínimo " + frequenciaMinima + "%).";
+        return gerarParticipante(participante, evento, resumo, cargaHorariaMinutos, emitidoEm);
+    }
+
+    @Override
+    public byte[] gerarParticipante(String participante, String evento, String resumoFrequencia,
+                                    int cargaHorariaMinutos, LocalDateTime emitidoEm) {
+        return gerarDocumento(participante, evento, "participou do evento",
+                resumoFrequencia + " Carga horária: " + cargaHoraria(cargaHorariaMinutos) + ".", emitidoEm);
     }
 
     @Override

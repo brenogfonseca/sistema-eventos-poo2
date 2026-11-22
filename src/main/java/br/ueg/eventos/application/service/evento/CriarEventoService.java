@@ -44,7 +44,9 @@ public class CriarEventoService implements CriarEventoPort {
         evento.configurarPublicacao(comando.modalidade, comando.status, comando.fusoHorario);
         evento.configurarPrazoCancelamento(comando.prazoCancelamento);
         if (comando.certificado) {
-            evento.habilitarCertificado(comando.frequenciaMinima);
+            evento.configurarPoliticaCertificado(comando.criterioFrequenciaCertificado,
+                    comando.frequenciaMinima, comando.frequenciaMinimaMinutos,
+                    comando.modoCargaHorariaCertificado, comando.cargaHorariaFixaMinutos);
         }
         if (comando.inscricoesAbertas && evento.isPublicado()) evento.abrirInscricoes();
         Evento eventoSalvo = eventoRepository.salvar(evento);

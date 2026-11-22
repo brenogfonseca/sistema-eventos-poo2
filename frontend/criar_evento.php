@@ -40,6 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $capacidade = (int)($_POST['capacidade'] ?? 0);
     $certificado = isset($_POST['certificado']);
     $frequenciaMinima = (int)($_POST['frequenciaMinima'] ?? 75);
+    $criterioFrequenciaCertificado = $_POST['criterioFrequenciaCertificado'] ?? 'PERCENTUAL';
+    $frequenciaMinimaMinutos = (int)round((float)($_POST['frequenciaMinimaHoras'] ?? 0) * 60);
+    $modoCargaHorariaCertificado = $_POST['modoCargaHorariaCertificado'] ?? 'DINAMICA';
+    $cargaHorariaFixaMinutos = (int)round((float)($_POST['cargaHorariaFixaHoras'] ?? 0) * 60);
     $inscricoesAbertas = ($_POST['inscricoesAbertas'] ?? '0') === '1';
     $modalidade = $_POST['modalidade'] ?? 'PRESENCIAL';
     $status = $_POST['status'] ?? 'PUBLICADO';
@@ -68,6 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'capacidade'         => $capacidade,
             'certificado'        => $certificado,
             'frequenciaMinima'   => $frequenciaMinima,
+            'criterioFrequenciaCertificado' => $criterioFrequenciaCertificado,
+            'frequenciaMinimaMinutos' => $frequenciaMinimaMinutos,
+            'modoCargaHorariaCertificado' => $modoCargaHorariaCertificado,
+            'cargaHorariaFixaMinutos' => $cargaHorariaFixaMinutos,
             'inscricoesAbertas'  => $inscricoesAbertas,
             'usuarioExecutorId'  => id_usuario_logado(), // ID do organizador/criador
             'modalidade'         => $modalidade,
@@ -164,6 +172,20 @@ ob_start();
                     <option value="<?= $percentual ?>" <?= (int)($_POST['frequenciaMinima'] ?? 75) === $percentual ? 'selected' : '' ?>><?= $percentual ?>%</option>
                 <?php endforeach; ?>
             </select>
+            <label for="criterioFrequenciaCertificado">Critério de elegibilidade</label>
+            <select id="criterioFrequenciaCertificado" name="criterioFrequenciaCertificado">
+                <option value="PERCENTUAL" <?= ($_POST['criterioFrequenciaCertificado'] ?? 'PERCENTUAL') === 'PERCENTUAL' ? 'selected' : '' ?>>Percentual da carga horária máxima do evento</option>
+                <option value="HORAS" <?= ($_POST['criterioFrequenciaCertificado'] ?? '') === 'HORAS' ? 'selected' : '' ?>>Quantidade mínima de horas presentes</option>
+            </select>
+            <label for="frequenciaMinimaHoras">Horas mínimas presentes</label>
+            <input type="number" id="frequenciaMinimaHoras" name="frequenciaMinimaHoras" min="0.25" step="0.25" value="<?= htmlspecialchars($_POST['frequenciaMinimaHoras'] ?? '') ?>">
+            <label for="modoCargaHorariaCertificado">Carga horária impressa no certificado</label>
+            <select id="modoCargaHorariaCertificado" name="modoCargaHorariaCertificado">
+                <option value="DINAMICA" <?= ($_POST['modoCargaHorariaCertificado'] ?? 'DINAMICA') === 'DINAMICA' ? 'selected' : '' ?>>Dinâmica: horas validadas do participante</option>
+                <option value="FIXA" <?= ($_POST['modoCargaHorariaCertificado'] ?? '') === 'FIXA' ? 'selected' : '' ?>>Fixa: valor definido pelo organizador</option>
+            </select>
+            <label for="cargaHorariaFixaHoras">Carga horária fixa (horas)</label>
+            <input type="number" id="cargaHorariaFixaHoras" name="cargaHorariaFixaHoras" min="0.25" step="0.25" value="<?= htmlspecialchars($_POST['cargaHorariaFixaHoras'] ?? '') ?>">
         </div>
 
         <div class="form-grupo">

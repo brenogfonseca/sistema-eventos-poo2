@@ -60,6 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
     $capacidade = (int)($_POST['capacidade'] ?? 0);
     $certificado = isset($_POST['certificado']);
     $frequenciaMinima = (int)($_POST['frequenciaMinima'] ?? $eventoAtual['frequenciaMinima'] ?? 75);
+    $criterioFrequenciaCertificado = $_POST['criterioFrequenciaCertificado'] ?? ($eventoAtual['criterioFrequenciaCertificado'] ?? 'PERCENTUAL');
+    $frequenciaMinimaMinutos = (int)round((float)($_POST['frequenciaMinimaHoras'] ?? (($eventoAtual['frequenciaMinimaMinutos'] ?? 0) / 60)) * 60);
+    $modoCargaHorariaCertificado = $_POST['modoCargaHorariaCertificado'] ?? ($eventoAtual['modoCargaHorariaCertificado'] ?? 'DINAMICA');
+    $cargaHorariaFixaMinutos = (int)round((float)($_POST['cargaHorariaFixaHoras'] ?? (($eventoAtual['cargaHorariaFixaMinutos'] ?? 0) / 60)) * 60);
     $inscricoesAbertas = ($_POST['inscricoesAbertas'] ?? '0') === '1';
     $modalidade = $_POST['modalidade'] ?? ($eventoAtual['modalidade'] ?? 'PRESENCIAL');
     $status = $_POST['status'] ?? ($eventoAtual['status'] ?? 'PUBLICADO');
@@ -84,6 +88,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $eventoAtual) {
             'capacidade'        => $capacidade,
             'certificado'       => $certificado,
             'frequenciaMinima'  => $frequenciaMinima,
+            'criterioFrequenciaCertificado' => $criterioFrequenciaCertificado,
+            'frequenciaMinimaMinutos' => $frequenciaMinimaMinutos,
+            'modoCargaHorariaCertificado' => $modoCargaHorariaCertificado,
+            'cargaHorariaFixaMinutos' => $cargaHorariaFixaMinutos,
             'inscricoesAbertas' => $inscricoesAbertas,
             'usuarioExecutorId' => $idUsuarioLogado, // Enviado no corpo JSON para a API Java
             'modalidade'        => $modalidade,
@@ -196,6 +204,22 @@ ob_start();
                     <option value="<?= $percentual ?>" <?= (int)($_POST['frequenciaMinima'] ?? $eventoAtual['frequenciaMinima'] ?? 75) === $percentual ? 'selected' : '' ?>><?= $percentual ?>%</option>
                 <?php endforeach; ?>
             </select>
+            <label for="criterioFrequenciaCertificado">Critério de elegibilidade</label>
+            <select id="criterioFrequenciaCertificado" name="criterioFrequenciaCertificado">
+                <?php $criterioAtual = $_POST['criterioFrequenciaCertificado'] ?? ($eventoAtual['criterioFrequenciaCertificado'] ?? 'PERCENTUAL'); ?>
+                <option value="PERCENTUAL" <?= $criterioAtual === 'PERCENTUAL' ? 'selected' : '' ?>>Percentual da carga horária máxima do evento</option>
+                <option value="HORAS" <?= $criterioAtual === 'HORAS' ? 'selected' : '' ?>>Quantidade mínima de horas presentes</option>
+            </select>
+            <label for="frequenciaMinimaHoras">Horas mínimas presentes</label>
+            <input type="number" id="frequenciaMinimaHoras" name="frequenciaMinimaHoras" min="0.25" step="0.25" value="<?= htmlspecialchars($_POST['frequenciaMinimaHoras'] ?? number_format(($eventoAtual['frequenciaMinimaMinutos'] ?? 0) / 60, 2, '.', '')) ?>">
+            <label for="modoCargaHorariaCertificado">Carga horária impressa no certificado</label>
+            <select id="modoCargaHorariaCertificado" name="modoCargaHorariaCertificado">
+                <?php $modoAtual = $_POST['modoCargaHorariaCertificado'] ?? ($eventoAtual['modoCargaHorariaCertificado'] ?? 'DINAMICA'); ?>
+                <option value="DINAMICA" <?= $modoAtual === 'DINAMICA' ? 'selected' : '' ?>>Dinâmica: horas validadas do participante</option>
+                <option value="FIXA" <?= $modoAtual === 'FIXA' ? 'selected' : '' ?>>Fixa: valor definido pelo organizador</option>
+            </select>
+            <label for="cargaHorariaFixaHoras">Carga horária fixa (horas)</label>
+            <input type="number" id="cargaHorariaFixaHoras" name="cargaHorariaFixaHoras" min="0.25" step="0.25" value="<?= htmlspecialchars($_POST['cargaHorariaFixaHoras'] ?? number_format(($eventoAtual['cargaHorariaFixaMinutos'] ?? 0) / 60, 2, '.', '')) ?>">
         </div>
 
         <div class="form-grupo">

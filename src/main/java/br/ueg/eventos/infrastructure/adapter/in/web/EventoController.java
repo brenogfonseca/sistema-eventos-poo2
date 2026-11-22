@@ -71,6 +71,10 @@ public class EventoController {
         public Integer usuarioExecutorId; // Legado: ignorado; a identidade vem do token bearer.
         public boolean certificado;
         public int frequenciaMinima = 75;
+        public String criterioFrequenciaCertificado = "PERCENTUAL";
+        public int frequenciaMinimaMinutos;
+        public String modoCargaHorariaCertificado = "DINAMICA";
+        public int cargaHorariaFixaMinutos;
         public boolean inscricoesAbertas;
         public String modalidade = "PRESENCIAL";
         public String status = "PUBLICADO";
@@ -89,6 +93,10 @@ public class EventoController {
         public boolean inscricoesAbertas;
         public boolean certificado;
         public int frequenciaMinima;
+        public String criterioFrequenciaCertificado;
+        public int frequenciaMinimaMinutos;
+        public String modoCargaHorariaCertificado;
+        public int cargaHorariaFixaMinutos;
         public String modalidade;
         public String status;
         public String fusoHorario;
@@ -105,6 +113,10 @@ public class EventoController {
             this.inscricoesAbertas = evento.isInscricoesAbertas();
             this.certificado = evento.isCertificado();
             this.frequenciaMinima = evento.getFrequenciaMinima();
+            this.criterioFrequenciaCertificado = evento.getCriterioFrequenciaCertificado();
+            this.frequenciaMinimaMinutos = evento.getFrequenciaMinimaMinutos();
+            this.modoCargaHorariaCertificado = evento.getModoCargaHorariaCertificado();
+            this.cargaHorariaFixaMinutos = evento.getCargaHorariaFixaMinutos();
             this.modalidade = evento.getModalidade();
             this.status = evento.getStatus();
             this.fusoHorario = evento.getFusoHorario();
@@ -212,7 +224,9 @@ public class EventoController {
                     request.status,
                     request.fusoHorario,
                     request.prazoCancelamento == null || request.prazoCancelamento.isBlank()
-                            ? null : LocalDateTime.parse(request.prazoCancelamento));
+                            ? null : LocalDateTime.parse(request.prazoCancelamento),
+                    request.criterioFrequenciaCertificado, request.frequenciaMinimaMinutos,
+                    request.modoCargaHorariaCertificado, request.cargaHorariaFixaMinutos);
 
             Evento eventoCriado = criarEventoPort.executar(comando);
 
@@ -256,7 +270,9 @@ public class EventoController {
                     request.status,
                     request.fusoHorario,
                     request.prazoCancelamento == null || request.prazoCancelamento.isBlank()
-                            ? null : LocalDateTime.parse(request.prazoCancelamento)
+                            ? null : LocalDateTime.parse(request.prazoCancelamento),
+                    request.criterioFrequenciaCertificado, request.frequenciaMinimaMinutos,
+                    request.modoCargaHorariaCertificado, request.cargaHorariaFixaMinutos
             );
 
             Evento eventoAtualizado = alterarEventoPort.executar(comando);

@@ -42,6 +42,10 @@ Exemplo de evento:
   "capacidade": 200,
   "certificado": true,
   "frequenciaMinima": 75,
+  "criterioFrequenciaCertificado": "PERCENTUAL",
+  "frequenciaMinimaMinutos": 0,
+  "modoCargaHorariaCertificado": "DINAMICA",
+  "cargaHorariaFixaMinutos": 0,
   "inscricoesAbertas": true,
   "modalidade": "PRESENCIAL",
   "status": "PUBLICADO",
@@ -83,11 +87,13 @@ Exemplo de atividade:
 | `GET /inscricoes/evento/{id}/checkin-qr` | Emite QR assinado da inscrição, não dos dados pessoais. |
 | `POST /frequencias/checkin-qr` | Exemplo: `{ "token": "...", "idAtividade": 1, "acao": "CHECKIN" }`. |
 | `POST /frequencias/manual` | Registra presença/ausência em atividade configurada como manual. |
-| `GET /inscricoes/evento/{id}/frequencia-certificado` | Consulta percentual, minutos e elegibilidade da própria conta. |
+| `GET /inscricoes/evento/{id}/frequencia-certificado` | Consulta presença acumulada, carga horária máxima do evento, critério de elegibilidade, carga horária do certificado e elegibilidade da própria conta. |
 | `GET /inscricoes/evento/{id}/certificado.pdf` | Emite PDF pessoal após o fim do evento, se o mínimo foi atingido. |
 | `GET /eventos/{idEvento}/pessoas-programacao/{idPessoa}/certificado.pdf?papel=PALESTRANTE` | Emite certificado de palestrante/apresentador após o evento; exige organizador autenticado. |
 
 A ação do QR depende da política: `CHECKIN`; `ENTRADA` e `SAIDA`; ou `PRESENTE` e `AUSENTE`. O responsável autenticado precisa ser administrador ou organizador do evento.
+
+O evento configura `criterioFrequenciaCertificado` como `PERCENTUAL` (com `frequenciaMinima` em 50, 75 ou 100) ou `HORAS` (com `frequenciaMinimaMinutos`). A carga impressa no certificado pode ser `DINAMICA` (minutos validados do participante) ou `FIXA` (valor de `cargaHorariaFixaMinutos`). Atividades simultâneas contribuem uma vez para o total do evento, usando a duração da atividade mais longa do bloco; a presença validada em qualquer atividade escolhida desse bloco recebe esse mesmo crédito.
 
 ## Avaliações e relatórios
 

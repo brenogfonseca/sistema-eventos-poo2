@@ -30,8 +30,12 @@ public class PostgresEventoRepository implements EventoRepositoryPort {
                 modalidade,
                 status,
                 fuso_horario,
-                prazo_cancelamento
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                prazo_cancelamento,
+                criterio_frequencia_certificado,
+                frequencia_minima_minutos,
+                modo_carga_horaria_certificado,
+                carga_horaria_fixa_minutos
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     private static final String UPDATE = """
@@ -48,7 +52,11 @@ public class PostgresEventoRepository implements EventoRepositoryPort {
                 modalidade = ?,
                 status = ?,
                 fuso_horario = ?,
-                prazo_cancelamento = ?
+                prazo_cancelamento = ?,
+                criterio_frequencia_certificado = ?,
+                frequencia_minima_minutos = ?,
+                modo_carga_horaria_certificado = ?,
+                carga_horaria_fixa_minutos = ?
             WHERE id = ?
             """;
 
@@ -193,7 +201,7 @@ public class PostgresEventoRepository implements EventoRepositoryPort {
                      connection.prepareStatement(UPDATE)) {
 
             preencherParametros(statement, evento);
-            statement.setLong(14, evento.getId());
+            statement.setLong(18, evento.getId());
 
             int linhasAtualizadas = statement.executeUpdate();
 
@@ -232,6 +240,10 @@ public class PostgresEventoRepository implements EventoRepositoryPort {
         statement.setString(12, evento.getFusoHorario());
         if (evento.getPrazoCancelamento() == null) statement.setNull(13, java.sql.Types.VARCHAR);
         else statement.setString(13, evento.getPrazoCancelamento().toString());
+        statement.setString(14, evento.getCriterioFrequenciaCertificado());
+        statement.setInt(15, evento.getFrequenciaMinimaMinutos());
+        statement.setString(16, evento.getModoCargaHorariaCertificado());
+        statement.setInt(17, evento.getCargaHorariaFixaMinutos());
     }
 
     private Optional<Evento> buscarPorId(
@@ -278,7 +290,11 @@ public class PostgresEventoRepository implements EventoRepositoryPort {
                 resultSet.getString("status"),
                 resultSet.getString("fuso_horario"),
                 resultSet.getString("prazo_cancelamento") == null ? null
-                        : LocalDateTime.parse(resultSet.getString("prazo_cancelamento"))
+                        : LocalDateTime.parse(resultSet.getString("prazo_cancelamento")),
+                resultSet.getString("criterio_frequencia_certificado"),
+                resultSet.getInt("frequencia_minima_minutos"),
+                resultSet.getString("modo_carga_horaria_certificado"),
+                resultSet.getInt("carga_horaria_fixa_minutos")
         );
     }
 }

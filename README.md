@@ -102,7 +102,7 @@ O cliente JavaFX oferece login/cadastro, busca de eventos e programação, inscr
 2. Depois da inscrição, escolhe as atividades. A API impede sobreposição de horário e controla as vagas simultaneamente no banco.
 3. A inscrição do evento emite um QR assinado que vale para as atividades escolhidas até o fim do evento, conforme o fuso configurado.
 4. O organizador seleciona a atividade no leitor e registra check-in único, entrada/saída ou validação manual, conforme a política definida para aquela atividade. Cada registro inclui horário, origem e responsável.
-5. O evento pode exigir 50%, 75% ou 100% de presença. A proporção considera os minutos das atividades escolhidas e validadas. Depois do fim do evento, participantes elegíveis podem baixar o certificado PDF; organizadores também podem emitir certificados de palestrante e apresentador com a carga horária das atividades vinculadas.
+5. O organizador escolhe se a elegibilidade exige 50%, 75%, 100% ou uma quantidade fixa de horas validadas. Atividades simultâneas contam uma vez pela duração da mais longa, inclusive para quem teve a presença validada na atividade simultânea mais curta. A carga impressa no certificado do evento pode ser fixa ou dinâmica, somando as horas validadas do participante. Depois do evento, participantes elegíveis podem baixar o PDF; organizadores também podem emitir certificados de palestrante e apresentador.
 6. Organizadores publicam avaliações textuais, de escolha única ou escala numérica. A API só aceita resposta de participante inscrito com frequência validada e protege respostas duplicadas.
 7. Administradores e organizadores exportam relatórios CSV de inscrições e frequência. Resultados de avaliações também podem ser exportados; questionários anônimos não exibem identificação individual.
 
@@ -122,7 +122,7 @@ As rotas privadas exigem `Authorization: Bearer <token>` e `X-Usuario-Id` corres
 
 ## Banco e evolução
 
-As migrações PostgreSQL são aplicadas em ordem e registradas em `schema_migrations`. Não edite migrações que já tenham sido executadas: crie uma nova versão. A camada de persistência de execução é PostgreSQL; classes SQLite antigas permanecem no histórico do código, mas não são ligadas pelo `Main`.
+As migrações PostgreSQL V1–V9 são aplicadas em ordem e registradas em `schema_migrations`. Não edite migrações que já tenham sido executadas: crie uma nova versão. A camada de persistência de execução é PostgreSQL; classes SQLite antigas permanecem no histórico do código, mas não são ligadas pelo `Main`.
 
 ## Documentação do projeto
 

@@ -40,5 +40,6 @@ O esquema vazio é montado automaticamente na inicialização da API. As migraç
 | V6 | Prazo configurável para cancelamento. |
 | V7 | Chave estrangeira entre atividade e local cadastrado. |
 | V8 | Registro de certificados para palestrantes e apresentadores sem exigir conta de usuário. |
+| V9 | Critério de elegibilidade por percentual/horas e modo de carga horária fixa/dinâmica do certificado do evento. |
 
 Migrações já aplicadas não devem ser alteradas. Mudanças posteriores devem ser acrescentadas como nova versão.

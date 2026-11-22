@@ -32,12 +32,12 @@ O PHP e o JavaFX são adaptadores de entrada. Ambos compartilham autenticação,
 |---|---|---|
 | D01 | Arquitetura hexagonal | Regras ficam em services e domínio; HTTP e JDBC são adaptadores substituíveis. |
 | D02 | PostgreSQL como persistência de execução | Oferece integridade referencial, índices parciais e bloqueio de linhas para controle concorrente de vagas. |
-| D03 | PostgreSQL inicia vazio e evolui por migrações | A inicialização registra e executa versões V1–V8; não existe import automático do SQLite. |
+| D03 | PostgreSQL inicia vazio e evolui por migrações | A inicialização registra e executa versões V1–V9; não existe import automático do SQLite. |
 | D04 | Clientes consomem a mesma API REST | Evita diferenças de validação entre web e desktop e centraliza autorização. |
 | D05 | Sessões bearer assinadas e senhas PBKDF2 | O token carrega identidade e expiração; senhas novas usam salt aleatório e derivação lenta. Hashes SHA-256 antigos são atualizados no próximo login válido. |
 | D06 | Um QR assinado por inscrição no evento | O identificador não inclui dados pessoais; o organizador escolhe a atividade na leitura e a API confirma a inscrição naquela atividade. |
 | D07 | Critério de frequência pertence à atividade | CHECKIN, ENTRADA_SAIDA e MANUAL têm validações específicas e registros auditáveis. |
-| D08 | Frequência do certificado é ponderada pelos minutos | O percentual compara os minutos das atividades escolhidas com os minutos das atividades validadas. O organizador configura 50%, 75% ou 100%. |
+| D08 | Frequência e carga horária do certificado são configuráveis por evento | A elegibilidade pode exigir 50%, 75%, 100% ou uma quantidade mínima de horas. A carga impressa pode ser fixa ou somar a presença validada. Atividades simultâneas contam pela duração da mais longa; presença validada em qualquer atividade escolhida simultânea recebe esse crédito. |
 | D09 | Avaliações exigem inscrição e presença validada | Uma resposta por participante e questão; anonimato remove a identificação das visões/exportações do organizador. |
 | D10 | Cancelamento lógico e histórico | Eventos e inscrições mantêm histórico; cancelar uma inscrição antes do prazo libera as vagas selecionadas. |
 

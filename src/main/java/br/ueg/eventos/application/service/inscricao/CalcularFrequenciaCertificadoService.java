@@ -14,12 +14,16 @@ import br.ueg.eventos.domain.model.Inscricao;
 import br.ueg.eventos.domain.model.InscricaoEvento;
 import br.ueg.eventos.domain.model.TipoFrequenciaEnum;
 
-import java.time.temporal.ChronoUnit;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-/** Calcula frequência como proporção das horas das atividades escolhidas que foram validadas. */
+/** Calcula a frequência do evento; cada bloco de atividades simultâneas usa sua maior duração. */
 public class CalcularFrequenciaCertificadoService implements CalcularFrequenciaCertificadoPort {
     private final InscricaoEventoRepositoryPort inscricaoEventoRepository;
     private final InscricaoRepositoryPort inscricaoRepository;
@@ -41,34 +45,69 @@ public class CalcularFrequenciaCertificadoService implements CalcularFrequenciaC
 
     @Override
     public Resultado executar(Long idInscricaoEvento, Long idUsuario) {
-        InscricaoEvento inscricao = inscricaoEventoRepository.buscarPorId(idInscricaoEvento)
+        InscricaoEvento inscricaoEvento = inscricaoEventoRepository.buscarPorId(idInscricaoEvento)
                 .orElseThrow(() -> new RegraNegocioException("Inscrição no evento não encontrada."));
-        Evento evento = eventoRepository.buscarPorId(inscricao.getIdEvento())
+        Evento evento = eventoRepository.buscarPorId(inscricaoEvento.getIdEvento())
                 .orElseThrow(() -> new RegraNegocioException("Evento não encontrado."));
-        if (!inscricao.estaAtiva()) throw new RegraNegocioException("A inscrição no evento está cancelada.");
-        if (idUsuario == null || !inscricao.getIdUsuario().equals(idUsuario)) {
+        if (!inscricaoEvento.estaAtiva()) throw new RegraNegocioException("A inscrição no evento está cancelada.");
+        if (idUsuario == null || !inscricaoEvento.getIdUsuario().equals(idUsuario)) {
             throw new RegraNegocioException("Só é permitido consultar a própria frequência.");
         }
 
+        Map<Long, Inscricao> selecoesAtivas = new HashMap<>();
+        for (Inscricao selecao : inscricaoRepository.listarPorInscricaoEvento(inscricaoEvento.getId())) {
+            if (selecao.estaAtiva()) selecoesAtivas.put(selecao.getIdAtividade(), selecao);
+        }
+
+        List<IntervaloAtividade> intervalos = atividadeRepository.listarPorEvento(evento.getId()).stream()
+                .map(IntervaloAtividade::de)
+                .sorted(Comparator.comparing(IntervaloAtividade::inicio))
+                .toList();
         long total = 0;
         long presentes = 0;
-        List<Inscricao> selecoes = inscricaoRepository.listarPorInscricaoEvento(inscricao.getId());
-        for (Inscricao selecao : selecoes) {
-            if (!selecao.estaAtiva()) continue;
-            Atividade atividade = atividadeRepository.buscarPorId(selecao.getIdAtividade())
-                    .orElseThrow(() -> new RegraNegocioException("Uma atividade selecionada não foi encontrada."));
-            LocalDateTime inicio = LocalDateTime.of(atividade.getData(), atividade.getHoraInicio());
-            LocalDateTime fim = LocalDateTime.of(atividade.getData(), atividade.getHoraFim());
-            if (fim.isBefore(inicio)) fim = fim.plusDays(1);
-            long minutos = Math.max(0, ChronoUnit.MINUTES.between(inicio, fim));
-            total += minutos;
-            if (validada(selecao, atividade)) presentes += minutos;
+        List<IntervaloAtividade> bloco = new ArrayList<>();
+        LocalDateTime fimBloco = null;
+        for (IntervaloAtividade atual : intervalos) {
+            if (!bloco.isEmpty() && !atual.inicio().isBefore(fimBloco)) {
+                long[] carga = computarBloco(bloco, selecoesAtivas);
+                total += carga[0];
+                presentes += carga[1];
+                bloco.clear();
+                fimBloco = null;
+            }
+            bloco.add(atual);
+            if (fimBloco == null || atual.fim().isAfter(fimBloco)) fimBloco = atual.fim();
+        }
+        if (!bloco.isEmpty()) {
+            long[] carga = computarBloco(bloco, selecoesAtivas);
+            total += carga[0];
+            presentes += carga[1];
         }
 
         double percentual = total == 0 ? 0.0 : Math.round((presentes * 10000.0) / total) / 100.0;
-        boolean elegivel = evento.isCertificado() && total > 0 && percentual >= evento.getFrequenciaMinima();
+        boolean criterioAtendido = "PERCENTUAL".equals(evento.getCriterioFrequenciaCertificado())
+                ? BigDecimal.valueOf(presentes).multiply(BigDecimal.valueOf(100))
+                        .compareTo(BigDecimal.valueOf(total)
+                                .multiply(BigDecimal.valueOf(evento.getFrequenciaMinima()))) >= 0
+                : presentes >= evento.getFrequenciaMinimaMinutos();
+        boolean elegivel = evento.isCertificado() && total > 0 && criterioAtendido;
+        long cargaCertificado = "FIXA".equals(evento.getModoCargaHorariaCertificado())
+                ? evento.getCargaHorariaFixaMinutos() : presentes;
         return new Resultado(evento.isCertificado(), evento.getFrequenciaMinima(),
+                evento.getCriterioFrequenciaCertificado(), evento.getFrequenciaMinimaMinutos(),
+                evento.getModoCargaHorariaCertificado(), cargaCertificado,
                 percentual, presentes, total, elegivel);
+    }
+
+    private long[] computarBloco(List<IntervaloAtividade> bloco, Map<Long, Inscricao> selecoesAtivas) {
+        long duracaoMaxima = 0;
+        boolean presenteNoBloco = false;
+        for (IntervaloAtividade intervalo : bloco) {
+            duracaoMaxima = Math.max(duracaoMaxima, intervalo.minutos());
+            Inscricao selecao = selecoesAtivas.get(intervalo.atividade().getId());
+            if (selecao != null && validada(selecao, intervalo.atividade())) presenteNoBloco = true;
+        }
+        return new long[]{duracaoMaxima, presenteNoBloco ? duracaoMaxima : 0};
     }
 
     private boolean validada(Inscricao inscricao, Atividade atividade) {
@@ -87,5 +126,15 @@ public class CalcularFrequenciaCertificadoService implements CalcularFrequenciaC
                 .max(Comparator.comparing(Frequencia::getDataHora))
                 .map(Frequencia::isPresente)
                 .orElse(false);
+    }
+
+    private record IntervaloAtividade(Atividade atividade, LocalDateTime inicio, LocalDateTime fim, long minutos) {
+        private static IntervaloAtividade de(Atividade atividade) {
+            LocalDateTime inicio = LocalDateTime.of(atividade.getData(), atividade.getHoraInicio());
+            LocalDateTime fim = LocalDateTime.of(atividade.getData(), atividade.getHoraFim());
+            if (fim.isBefore(inicio)) fim = fim.plusDays(1);
+            return new IntervaloAtividade(atividade, inicio, fim,
+                    Math.max(0, ChronoUnit.MINUTES.between(inicio, fim)));
+        }
     }
 }

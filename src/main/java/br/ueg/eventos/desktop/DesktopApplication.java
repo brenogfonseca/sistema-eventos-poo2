@@ -273,9 +273,22 @@ public final class DesktopApplication extends Application {
                 byte[] png = java.util.Base64.getDecoder().decode(codigo.path("imagemBase64").asText());
                 qr.setImage(new Image(new ByteArrayInputStream(png)));
                 JsonNode frequencia = api.get("/inscricoes/evento/" + item.id() + "/frequencia-certificado", session);
-                detalhes.setText("Evento #" + item.idEvento() + " · Frequência: "
-                        + frequencia.path("percentualFrequencia").asText("0") + "% · "
-                        + (frequencia.path("elegivel").asBoolean() ? "elegível ao certificado" : "não elegível ainda"));
+                double horasPresentes = frequencia.path("minutosPresentes").asDouble() / 60.0;
+                double horasTotais = frequencia.path("minutosTotais").asDouble() / 60.0;
+                String criterio = frequencia.path("criterioFrequencia").asText("PERCENTUAL");
+                String minimo = "PERCENTUAL".equals(criterio)
+                        ? frequencia.path("frequenciaMinima").asText("75") + "%"
+                        : String.format("%.2f h", frequencia.path("frequenciaMinimaMinutos").asDouble() / 60.0);
+                double cargaCertificado = frequencia.path("cargaHorariaCertificadoMinutos").asDouble() / 60.0;
+                String modoCarga = "FIXA".equals(frequencia.path("modoCargaHoraria").asText("DINAMICA"))
+                        ? "fixa" : "dinâmica";
+                detalhes.setText("Evento #" + item.idEvento()
+                        + " · Presença: " + String.format("%.2f h / %.2f h", horasPresentes, horasTotais)
+                        + " (" + frequencia.path("percentualFrequencia").asText("0") + "%)"
+                        + " · mínimo: " + minimo
+                        + " · certificado: " + String.format("%.2f h", cargaCertificado) + " (" + modoCarga + ")"
+                        + " · " + (frequencia.path("elegivel").asBoolean()
+                                ? "elegível ao certificado" : "não elegível ainda"));
                 status.setText("Este QR identifica sua inscrição no evento e pode ser usado nas atividades selecionadas.");
             });
         });
@@ -608,6 +621,10 @@ public final class DesktopApplication extends Application {
         ComboBox<String> modalidade = new ComboBox<>(FXCollections.observableArrayList("PRESENCIAL", "ONLINE", "HIBRIDO"));
         ComboBox<String> statusEvento = new ComboBox<>(FXCollections.observableArrayList("RASCUNHO", "PUBLICADO", "CANCELADO", "ENCERRADO"));
         ComboBox<String> minimo = new ComboBox<>(FXCollections.observableArrayList("50", "75", "100"));
+        ComboBox<String> criterioFrequencia = new ComboBox<>(FXCollections.observableArrayList("PERCENTUAL", "HORAS"));
+        TextField horasMinimas = new TextField("0"); horasMinimas.setPromptText("Mínimo de presença em horas");
+        ComboBox<String> modoCarga = new ComboBox<>(FXCollections.observableArrayList("DINAMICA", "FIXA"));
+        TextField cargaFixa = new TextField("0"); cargaFixa.setPromptText("Carga fixa do certificado em horas");
         TextField fuso = new TextField();
         TextField prazo = new TextField(); prazo.setPromptText("Prazo de cancelamento ou vazio");
         CheckBox certificado = new CheckBox("Emitir certificado");
@@ -628,6 +645,10 @@ public final class DesktopApplication extends Application {
             modalidade.setValue(dados.path("modalidade").asText("PRESENCIAL"));
             statusEvento.setValue(dados.path("status").asText("RASCUNHO"));
             minimo.setValue(Integer.toString(dados.path("frequenciaMinima").asInt(75)));
+            criterioFrequencia.setValue(dados.path("criterioFrequenciaCertificado").asText("PERCENTUAL"));
+            horasMinimas.setText(Double.toString(dados.path("frequenciaMinimaMinutos").asInt() / 60.0));
+            modoCarga.setValue(dados.path("modoCargaHorariaCertificado").asText("DINAMICA"));
+            cargaFixa.setText(Double.toString(dados.path("cargaHorariaFixaMinutos").asInt() / 60.0));
             fuso.setText(dados.path("fusoHorario").asText("America/Sao_Paulo"));
             prazo.setText(dados.path("prazoCancelamento").asText(""));
             certificado.setSelected(dados.path("certificado").asBoolean());
@@ -646,6 +667,10 @@ public final class DesktopApplication extends Application {
                 dados.put("capacidade", Integer.parseInt(capacidade.getText()));
                 dados.put("certificado", certificado.isSelected());
                 dados.put("frequenciaMinima", Integer.parseInt(minimo.getValue()));
+                dados.put("criterioFrequenciaCertificado", criterioFrequencia.getValue());
+                dados.put("frequenciaMinimaMinutos", (int) Math.round(Double.parseDouble(horasMinimas.getText()) * 60));
+                dados.put("modoCargaHorariaCertificado", modoCarga.getValue());
+                dados.put("cargaHorariaFixaMinutos", (int) Math.round(Double.parseDouble(cargaFixa.getText()) * 60));
                 dados.put("inscricoesAbertas", inscricoes.isSelected());
                 dados.put("modalidade", modalidade.getValue());
                 dados.put("status", statusEvento.getValue());
@@ -669,7 +694,8 @@ public final class DesktopApplication extends Application {
             }));
         });
         VBox content = new VBox(9, evento, carregar, titulo, descricao, inicio, fim,
-                capacidade, modalidade, statusEvento, certificado, minimo, inscricoes,
+                capacidade, modalidade, statusEvento, certificado, minimo, criterioFrequencia,
+                horasMinimas, modoCarga, cargaFixa, inscricoes,
                 fuso, prazo, new HBox(8, salvar, excluir), status);
         content.setPadding(new Insets(16));
         return new ScrollPane(content);
@@ -928,6 +954,12 @@ public final class DesktopApplication extends Application {
         statusEvento.getSelectionModel().select("RASCUNHO");
         ComboBox<String> minimo = new ComboBox<>(FXCollections.observableArrayList("50", "75", "100"));
         minimo.getSelectionModel().select("75");
+        ComboBox<String> criterioFrequencia = new ComboBox<>(FXCollections.observableArrayList("PERCENTUAL", "HORAS"));
+        criterioFrequencia.getSelectionModel().select("PERCENTUAL");
+        TextField horasMinimas = new TextField("0"); horasMinimas.setPromptText("Mínimo de presença em horas");
+        ComboBox<String> modoCarga = new ComboBox<>(FXCollections.observableArrayList("DINAMICA", "FIXA"));
+        modoCarga.getSelectionModel().select("DINAMICA");
+        TextField cargaFixa = new TextField("0"); cargaFixa.setPromptText("Carga fixa do certificado em horas");
         TextField prazoCancelamento = new TextField();
         prazoCancelamento.setPromptText("Prazo para cancelar: AAAA-MM-DDTHH:mm (opcional)");
         CheckBox certificado = new CheckBox("Emitir certificado conforme frequência mínima");
@@ -943,6 +975,10 @@ public final class DesktopApplication extends Application {
             dados.put("capacidade", Integer.parseInt(capacidade.getText()));
             dados.put("certificado", certificado.isSelected());
             dados.put("frequenciaMinima", Integer.parseInt(minimo.getValue()));
+            dados.put("criterioFrequenciaCertificado", criterioFrequencia.getValue());
+            dados.put("frequenciaMinimaMinutos", (int) Math.round(Double.parseDouble(horasMinimas.getText()) * 60));
+            dados.put("modoCargaHorariaCertificado", modoCarga.getValue());
+            dados.put("cargaHorariaFixaMinutos", (int) Math.round(Double.parseDouble(cargaFixa.getText()) * 60));
             dados.put("inscricoesAbertas", inscricoes.isSelected());
             dados.put("modalidade", modalidade.getValue());
             dados.put("status", statusEvento.getValue());
@@ -953,7 +989,8 @@ public final class DesktopApplication extends Application {
             status.setText("Evento criado e você foi vinculado como organizador.");
         }));
         VBox content = new VBox(9, titulo, descricao, inicio, fim, capacidade,
-                modalidade, statusEvento, certificado, minimo, inscricoes, prazoCancelamento, salvar, status);
+                modalidade, statusEvento, certificado, minimo, criterioFrequencia, horasMinimas,
+                modoCarga, cargaFixa, inscricoes, prazoCancelamento, salvar, status);
         content.setPadding(new Insets(16));
         return new ScrollPane(content);
     }

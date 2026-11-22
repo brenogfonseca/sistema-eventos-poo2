@@ -53,6 +53,11 @@ public class PostgresDatabaseInitializer {
                     8,
                     "Emissão de certificados para palestrantes e apresentadores",
                     "/db/migration/postgresql/V8__certificados_pessoas_programacao.sql"
+            ),
+            new Migracao(
+                    9,
+                    "Critérios de elegibilidade e carga horária de certificado por evento",
+                    "/db/migration/postgresql/V9__politica_carga_certificado_evento.sql"
             )
     );
 

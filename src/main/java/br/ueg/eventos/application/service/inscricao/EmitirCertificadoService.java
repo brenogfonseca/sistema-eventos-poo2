@@ -74,16 +74,28 @@ public final class EmitirCertificadoService implements EmitirCertificadoPort {
         if (!resultado.certificadoHabilitado || !resultado.elegivel) {
             throw new RegraNegocioException("A frequência ainda não atingiu o mínimo necessário para emitir o certificado.");
         }
-        if (resultado.minutosPresentes <= 0 || resultado.minutosPresentes > Integer.MAX_VALUE) {
+        if (resultado.cargaHorariaCertificadoMinutos <= 0 || resultado.cargaHorariaCertificadoMinutos > Integer.MAX_VALUE) {
             throw new RegraNegocioException("A carga horária registrada não pode ser emitida.");
         }
         Usuario participante = usuarios.buscarPorId(Math.toIntExact(idUsuario))
                 .orElseThrow(() -> new RegraNegocioException("Participante não encontrado."));
         LocalDateTime emitidoEm = LocalDateTime.ofInstant(clock.instant(), zona);
         String nomeArquivo = "certificado-evento-" + evento.getId() + "-usuario-" + idUsuario + ".pdf";
-        byte[] pdf = gerador.gerar(participante.getNome(), evento.getTitulo(), resultado.percentualFrequencia,
-                resultado.frequenciaMinima, Math.toIntExact(resultado.minutosPresentes), emitidoEm);
-        certificados.registrar(evento.getId(), idUsuario, Math.toIntExact(resultado.minutosPresentes), nomeArquivo);
+        String resumoFrequencia = "PERCENTUAL".equals(resultado.criterioFrequencia)
+                ? String.format(java.util.Locale.forLanguageTag("pt-BR"), "Frequência de %.2f%% (mínimo %d%%).",
+                        resultado.percentualFrequencia, resultado.frequenciaMinima)
+                : "Presença de " + formatarHoras(resultado.minutosPresentes) + " (mínimo "
+                        + formatarHoras(resultado.frequenciaMinimaMinutos) + ").";
+        int cargaCertificado = Math.toIntExact(resultado.cargaHorariaCertificadoMinutos);
+        byte[] pdf = gerador.gerarParticipante(participante.getNome(), evento.getTitulo(),
+                resumoFrequencia, cargaCertificado, emitidoEm);
+        certificados.registrar(evento.getId(), idUsuario, cargaCertificado, nomeArquivo);
         return new Documento(nomeArquivo, pdf);
+    }
+
+    private String formatarHoras(long minutos) {
+        long horas = minutos / 60;
+        long resto = minutos % 60;
+        return resto == 0 ? horas + " h" : horas + " h " + resto + " min";
     }
 }

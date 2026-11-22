@@ -123,7 +123,9 @@ public class AlterarEventoService implements AlterarEventoPort {
         // Atualiza os dados respeitando o encapsulamento e proteção de invariantes do domínio
         evento.atualizarDados(comando.titulo, comando.descricao, novoPeriodo, comando.capacidade);
         if (comando.certificado) {
-            evento.habilitarCertificado(comando.frequenciaMinima);
+            evento.configurarPoliticaCertificado(comando.criterioFrequenciaCertificado,
+                    comando.frequenciaMinima, comando.frequenciaMinimaMinutos,
+                    comando.modoCargaHorariaCertificado, comando.cargaHorariaFixaMinutos);
         } else {
             evento.desabilitarCertificado();
         }

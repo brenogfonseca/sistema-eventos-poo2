@@ -102,8 +102,24 @@ ob_start();
     <?php endif; ?>
 
     <?php if ($ativo && $frequencia && !empty($frequencia['certificadoHabilitado'])): ?>
-        <p><strong>Frequência computada:</strong> <?= number_format((float)$frequencia['percentualFrequencia'], 2, ',', '.') ?>%
-            (mínimo <?= (int)$frequencia['frequenciaMinima'] ?>%) —
+        <?php
+            $criterioPorPercentual = ($frequencia['criterioFrequencia'] ?? 'PERCENTUAL') === 'PERCENTUAL';
+            $horasPresentes = (int)($frequencia['minutosPresentes'] ?? 0) / 60;
+            $horasTotais = (int)($frequencia['minutosTotais'] ?? 0) / 60;
+            $horasMinimas = (int)($frequencia['frequenciaMinimaMinutos'] ?? 0) / 60;
+            $cargaCertificadoHoras = (int)($frequencia['cargaHorariaCertificadoMinutos'] ?? 0) / 60;
+        ?>
+        <p><strong>Presença computada:</strong>
+            <?= number_format($horasPresentes, 2, ',', '.') ?> h de
+            <?= number_format($horasTotais, 2, ',', '.') ?> h possíveis
+            (<?= number_format((float)$frequencia['percentualFrequencia'], 2, ',', '.') ?>%).
+            <?php if ($criterioPorPercentual): ?>
+                Critério mínimo: <?= (int)$frequencia['frequenciaMinima'] ?>%.
+            <?php else: ?>
+                Critério mínimo: <?= number_format($horasMinimas, 2, ',', '.') ?> h.
+            <?php endif; ?>
+            Certificado configurado para <?= number_format($cargaCertificadoHoras, 2, ',', '.') ?> h
+            (<?= ($frequencia['modoCargaHoraria'] ?? 'DINAMICA') === 'FIXA' ? 'carga fixa' : 'carga dinâmica' ?>) —
             <?= !empty($frequencia['elegivel']) ? 'elegível ao certificado' : 'ainda não elegível' ?>
         </p>
         <?php if (!empty($frequencia['elegivel']) && $eventoEncerrado): ?>

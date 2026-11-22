@@ -6,6 +6,9 @@ public interface CertificadoPdfGeneratorPort {
     byte[] gerar(String participante, String evento, double frequenciaPercentual,
                  int frequenciaMinima, int cargaHorariaMinutos, LocalDateTime emitidoEm);
 
+    byte[] gerarParticipante(String participante, String evento, String resumoFrequencia,
+                             int cargaHorariaMinutos, LocalDateTime emitidoEm);
+
     byte[] gerarProgramacao(String nome, String evento, String papel,
                             int cargaHorariaMinutos, LocalDateTime emitidoEm);
 }
