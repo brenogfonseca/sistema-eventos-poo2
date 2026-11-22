@@ -12,12 +12,17 @@ Esta matriz relaciona os requisitos funcionais do documento do projeto aos módu
 | Inscrição no evento e escolha de atividades | Inscrição primeiro; escolhas separadas; capacidade e conflito de horário no serviço | `atividades.php`, `minhas_inscricoes.php`, JavaFX | Implementado |
 | Cancelamento | Prazo por evento e liberação de vagas das atividades | `minhas_inscricoes.php`, JavaFX | Implementado |
 | Presença e auditoria | Política por atividade: check-in, entrada/saída ou manual; data, origem e responsável | `checkin_qr.php`, JavaFX | Implementado |
+| Regra de local/horário (RF-07) | Sobreposição no mesmo local retorna aviso não bloqueante ao criar/editar | formulário de atividade, JavaFX | Implementado |
+| Vagas por atividade (RF-13) | Saldo individual por atividade, decremento atômico e liberação ao cancelar | criação/edição da atividade e escolha de agenda | Implementado |
+| Perfis de portaria | Organizador atribui colaboradores por atividade; colaboradores registram presença sem corrigir status; usuário final não valida presença própria | `colaboradores.php`, `checkin_qr.php`, `presencas.php`, JavaFX | Implementado |
+| Método de identificação | QR ou busca de nome/CPF é escolhido por atividade; CPF é opcional no cadastro e mascarado nas consultas | `atividades.php`, `editar_atividade.php`, `cadastro.php`, JavaFX | Implementado |
+| Fuso das marcações (RN-20) | Frequência gravada como instante absoluto; V11 migra histórico no fuso do evento | API e PostgreSQL | Implementado |
 | QR único por evento | Token assinado associado à inscrição, válido até o encerramento no fuso do evento; organizador seleciona a atividade | `minhas_inscricoes.php`, `checkin_qr.php`, JavaFX | Implementado |
-| Frequência mínima e carga horária | Elegibilidade por 50%, 75%, 100% ou mínimo fixo de horas; carga do certificado fixa ou dinâmica; simultâneas contam pela maior duração | `minhas_inscricoes.php`, JavaFX | Implementado |
+| Frequência mínima e carga horária | Elegibilidade por 50%, 75%, 100% ou mínimo fixo de horas; carga do certificado fixa ou dinâmica; intervalos simultâneos contam uma vez e períodos diferentes são somados | `minhas_inscricoes.php`, JavaFX | Implementado |
 | Certificado de participante | PDF pessoal após o evento, se habilitado e elegível; registro na tabela `certificados` | `minhas_inscricoes.php`, JavaFX | Implementado |
 | Questionários | Tipos textual, escolha única e escala; publicação, anonimato e uma resposta por questão | `avaliacoes.php`, JavaFX | Implementado |
 | Consolidação e relatórios | Exportação CSV de inscrições, frequência e respostas; dados anônimos sem identificação | `relatorios.php`, `avaliacoes.php`, JavaFX | Implementado |
-| Persistência PostgreSQL | Migrações V1–V9 e repositórios JDBC PostgreSQL | compartilhado pelos dois clientes | Implementado |
+| Persistência PostgreSQL | Migrações V1–V11 e repositórios JDBC PostgreSQL | compartilhado pelos dois clientes | Implementado |
 | Cliente desktop independente | JavaFX consome API REST e reaproveita as regras do servidor | `DesktopApplication` | Implementado; precisa de compilação e validação local |
 | Certificado de palestrante/apresentador | PDF com a carga horária das atividades vinculadas; emissão restrita ao organizador após o evento e registro na tabela `certificados` | `atividades.php`, JavaFX | Implementado |
 | Testes unitários e evidências de execução | Há testes de invariantes do evento/período, hash de senha e geração de PDF; o ambiente atual não dispõe de Maven/JDK 17/Docker/PHP para executar a suíte ou registrar evidências reais | `src/test/java`, roteiro abaixo | Implementados; execução pendente |

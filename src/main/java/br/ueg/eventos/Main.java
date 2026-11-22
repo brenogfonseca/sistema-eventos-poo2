@@ -3,6 +3,7 @@ package br.ueg.eventos;
 import br.ueg.eventos.application.port.in.atividade.AtualizarAtividadePort;
 import br.ueg.eventos.application.port.in.atividade.BuscarAtividadePorIdPort;
 import br.ueg.eventos.application.port.in.atividade.CadastrarAtividadePort;
+import br.ueg.eventos.application.port.in.atividade.ConsultarConflitosLocalAtividadePort;
 import br.ueg.eventos.application.port.in.atividade.ExcluirAtividadePort;
 import br.ueg.eventos.application.port.in.atividade.ListarAtividadesPorEventoPort;
 import br.ueg.eventos.application.port.in.evento.AlterarEventoPort;
@@ -12,6 +13,7 @@ import br.ueg.eventos.application.port.in.evento.CriarEventoPort;
 import br.ueg.eventos.application.port.in.evento.ExcluirEventoPort;
 import br.ueg.eventos.application.port.in.evento.ListarEventosPort;
 import br.ueg.eventos.application.port.out.VinculoOrganizadorRepositoryPort;
+import br.ueg.eventos.application.port.out.VinculoColaboradorRepositoryPort;
 import br.ueg.eventos.application.service.evento.AlterarEventoService;
 import br.ueg.eventos.application.service.evento.BuscarEventoPorIdService;
 import br.ueg.eventos.application.service.evento.BuscarVinculoOrganizadorService;
@@ -20,6 +22,8 @@ import br.ueg.eventos.application.port.in.frequencia.BuscarFrequenciaPorIdPort;
 import br.ueg.eventos.application.port.in.frequencia.GerarCheckinQrPort;
 import br.ueg.eventos.application.port.in.frequencia.ListarFrequenciasPorInscricaoPort;
 import br.ueg.eventos.application.port.in.frequencia.RegistrarCheckinQrPort;
+import br.ueg.eventos.application.port.in.frequencia.RegistrarCheckinPorInscricaoPort;
+import br.ueg.eventos.application.port.in.frequencia.BuscarParticipantesCheckinPort;
 import br.ueg.eventos.application.port.in.frequencia.RegistrarFrequenciaPort;
 import br.ueg.eventos.application.port.in.frequencia.RegistrarPresencaManualPort;
 import br.ueg.eventos.application.port.in.inscricao.BuscarInscricaoPorIdPort;
@@ -82,6 +86,7 @@ import br.ueg.eventos.application.port.out.UsuarioRepositoryPort;
 import br.ueg.eventos.application.service.atividade.AtualizarAtividadeService;
 import br.ueg.eventos.application.service.atividade.BuscarAtividadePorIdService;
 import br.ueg.eventos.application.service.atividade.CadastrarAtividadeService;
+import br.ueg.eventos.application.service.atividade.ConsultarConflitosLocalAtividadeService;
 import br.ueg.eventos.application.service.atividade.ExcluirAtividadeService;
 import br.ueg.eventos.application.service.atividade.ListarAtividadesPorEventoService;
 import br.ueg.eventos.application.service.evento.CriarEventoService;
@@ -90,6 +95,7 @@ import br.ueg.eventos.application.service.frequencia.BuscarFrequenciaPorIdServic
 import br.ueg.eventos.application.service.frequencia.GerarCheckinQrService;
 import br.ueg.eventos.application.service.frequencia.ListarFrequenciasPorInscricaoService;
 import br.ueg.eventos.application.service.frequencia.RegistrarCheckinQrService;
+import br.ueg.eventos.application.service.frequencia.BuscarParticipantesCheckinService;
 import br.ueg.eventos.application.service.frequencia.RegistrarFrequenciaService;
 import br.ueg.eventos.application.service.frequencia.RegistrarPresencaManualService;
 import br.ueg.eventos.application.service.inscricao.BuscarInscricaoPorIdService;
@@ -136,10 +142,12 @@ import br.ueg.eventos.infrastructure.adapter.in.web.AtividadeController;
 import br.ueg.eventos.infrastructure.adapter.in.web.AuthController;
 import br.ueg.eventos.infrastructure.adapter.in.web.BearerAuthenticationFilter;
 import br.ueg.eventos.infrastructure.adapter.in.web.CheckinQrController;
+import br.ueg.eventos.infrastructure.adapter.in.web.CheckinParticipanteController;
 import br.ueg.eventos.infrastructure.adapter.in.web.CertificadoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.EventoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.EventoAuthorization;
 import br.ueg.eventos.infrastructure.adapter.in.web.FrequenciaController;
+import br.ueg.eventos.infrastructure.adapter.in.web.VinculoColaboradorController;
 import br.ueg.eventos.infrastructure.adapter.in.web.PessoaProgramacaoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.InscricaoController;
 import br.ueg.eventos.infrastructure.adapter.in.web.InscricaoEventoController;
@@ -166,6 +174,7 @@ import br.ueg.eventos.infrastructure.adapter.out.persistence.PostgresRelatorioRe
 import br.ueg.eventos.infrastructure.adapter.out.persistence.PostgresRespostaRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.PostgresUsuarioRepository;
 import br.ueg.eventos.infrastructure.adapter.out.persistence.PostgresVinculoOrganizadorRepository;
+import br.ueg.eventos.infrastructure.adapter.out.persistence.PostgresVinculoColaboradorRepository;
 import br.ueg.eventos.infrastructure.adapter.out.qrcode.ZxingQrCodeGenerator;
 import br.ueg.eventos.infrastructure.adapter.out.pdf.SimpleCertificatePdfGenerator;
 import br.ueg.eventos.infrastructure.adapter.out.security.HmacCheckinQrTokenSigner;
@@ -225,6 +234,8 @@ public class Main {
                 new SimpleCertificatePdfGenerator();
         VinculoOrganizadorRepositoryPort vinculoOrganizadorRepository =
                 new PostgresVinculoOrganizadorRepository(connectionFactory);
+        VinculoColaboradorRepositoryPort vinculoColaboradorRepository =
+                new PostgresVinculoColaboradorRepository(connectionFactory);
         PessoaProgramacaoRepositoryPort pessoaProgramacaoRepository =
                 new PostgresPessoaProgramacaoRepository(connectionFactory);
         EventoAuthorization eventoAuthorization = new EventoAuthorization(
@@ -283,13 +294,16 @@ public class Main {
                 new BuscarAtividadePorIdService(atividadeRepository, eventoRepository);
         ListarAtividadesPorEventoPort listarAtividadesPorEventoPort =
                 new ListarAtividadesPorEventoService(atividadeRepository);
+        ConsultarConflitosLocalAtividadePort consultarConflitosLocalAtividadePort =
+                new ConsultarConflitosLocalAtividadeService(atividadeRepository);
         AtividadeController atividadeController = new AtividadeController(
                 cadastrarAtividadePort,
                 atualizarAtividadePort,
                 excluirAtividadePort,
                 buscarAtividadePorIdPort,
                 listarAtividadesPorEventoPort,
-                eventoAuthorization
+                eventoAuthorization,
+                consultarConflitosLocalAtividadePort
         );
 
         // Inscrição
@@ -408,7 +422,7 @@ public class Main {
                         eventoRepository,
                         checkinQrTokenSigner
                 );
-        RegistrarCheckinQrPort registrarCheckinQrPort =
+        RegistrarCheckinQrService registrarCheckinService =
                 new RegistrarCheckinQrService(
                         checkinQrTokenSigner,
                         inscricaoEventoRepository,
@@ -417,13 +431,26 @@ public class Main {
                         frequenciaRepository,
                         usuarioRepository,
                         vinculoOrganizadorRepository,
+                        vinculoColaboradorRepository,
                         registrarFrequenciaPort
                 );
+        RegistrarCheckinQrPort registrarCheckinQrPort = registrarCheckinService;
+        RegistrarCheckinPorInscricaoPort registrarCheckinPorInscricaoPort = registrarCheckinService;
         CheckinQrController checkinQrController = new CheckinQrController(
                 gerarCheckinQrPort,
                 registrarCheckinQrPort,
                 new ZxingQrCodeGenerator()
         );
+        BuscarParticipantesCheckinPort buscarParticipantesCheckinPort =
+                new BuscarParticipantesCheckinService(
+                        atividadeRepository, inscricaoRepository, inscricaoEventoRepository, usuarioRepository);
+        CheckinParticipanteController checkinParticipanteController = new CheckinParticipanteController(
+                atividadeRepository, usuarioRepository, vinculoOrganizadorRepository,
+                vinculoColaboradorRepository, buscarParticipantesCheckinPort, registrarCheckinPorInscricaoPort,
+                inscricaoRepository, inscricaoEventoRepository, frequenciaRepository, eventoAuthorization);
+        VinculoColaboradorController vinculoColaboradorController = new VinculoColaboradorController(
+                atividadeRepository, eventoRepository, usuarioRepository, vinculoOrganizadorRepository,
+                vinculoColaboradorRepository, eventoAuthorization);
 
         // Usuário
         CadastrarUsuarioPort cadastrarUsuarioPort =
@@ -580,6 +607,8 @@ public class Main {
         inscricaoEventoController.registerRoutes(app);
         frequenciaController.registerRoutes(app);
         checkinQrController.registerRoutes(app);
+        checkinParticipanteController.registerRoutes(app);
+        vinculoColaboradorController.registerRoutes(app);
         certificadoController.registerRoutes(app);
         usuarioController.registerRoutes(app);
         localController.registerRoutes(app);

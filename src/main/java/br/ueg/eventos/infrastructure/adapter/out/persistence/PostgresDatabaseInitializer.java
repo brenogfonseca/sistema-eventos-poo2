@@ -58,6 +58,16 @@ public class PostgresDatabaseInitializer {
                     9,
                     "Critérios de elegibilidade e carga horária de certificado por evento",
                     "/db/migration/postgresql/V9__politica_carga_certificado_evento.sql"
+            ),
+            new Migracao(
+                    10,
+                    "Método de identificação no check-in e vínculos por atividade",
+                    "/db/migration/postgresql/V10__identificacao_checkin_e_colaboradores.sql"
+            ),
+            new Migracao(
+                    11,
+                    "Frequências persistidas como instantes com fuso horário",
+                    "/db/migration/postgresql/V11__frequencias_com_instante_timezone.sql"
             )
     );
 

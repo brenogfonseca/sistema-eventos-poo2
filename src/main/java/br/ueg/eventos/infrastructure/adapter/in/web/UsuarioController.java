@@ -89,6 +89,7 @@ public class UsuarioController {
         public String email;
         public String senha;
         public String perfil;
+        public String cpf;
     }
 
     static class AlterarDadosRequest {
@@ -115,7 +116,7 @@ public class UsuarioController {
 
             CadastrarUsuarioRequest req = ctx.bodyAsClass(CadastrarUsuarioRequest.class);
             Usuario criado = cadastrarUsuarioPort.executar(
-                    new ComandoCadastrarUsuario(req.nome, req.email, req.senha, Perfil.USUARIO));
+                    new ComandoCadastrarUsuario(req.nome, req.email, req.senha, Perfil.USUARIO, req.cpf));
 
             ctx.status(HttpStatus.CREATED).json(new UsuarioResponse(criado));
 

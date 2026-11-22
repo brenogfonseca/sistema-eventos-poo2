@@ -7,7 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,7 +78,7 @@ public final class PostgresRelatorioRepository implements RelatorioRepositoryPor
                     GrupoFrequencia grupo = grupos.computeIfAbsent(chave, ignored -> criarGrupo(rs, idInscricao));
                     int idFrequencia = rs.getInt("frequencia_id");
                     if (!rs.wasNull()) {
-                        grupo.marcacoes.add(new Marca(LocalDateTime.parse(rs.getString("data_hora")),
+                        grupo.marcacoes.add(new Marca(rs.getLong("frequencia_id"), rs.getTimestamp("data_hora").toInstant(),
                                 rs.getString("origem"), rs.getInt("presente") == 1, rs.getString("tipo")));
                     }
                 }
@@ -110,6 +110,9 @@ public final class PostgresRelatorioRepository implements RelatorioRepositoryPor
     }
 
     private boolean validar(String politicaTexto, List<Marca> marcacoes) {
+        Marca correcao = marcacoes.stream().filter(f -> "CORRECAO_ORGANIZADOR".equalsIgnoreCase(f.origem))
+                .max(java.util.Comparator.comparing(Marca::dataHora).thenComparingLong(Marca::id)).orElse(null);
+        if (correcao != null) return correcao.presente;
         TipoFrequenciaEnum politica;
         try { politica = TipoFrequenciaEnum.valueOf(politicaTexto); }
         catch (Exception e) { return false; }
@@ -117,12 +120,14 @@ public final class PostgresRelatorioRepository implements RelatorioRepositoryPor
             return marcacoes.stream().anyMatch(f -> f.presente && "CHECKIN".equalsIgnoreCase(f.tipo));
         }
         if (politica == TipoFrequenciaEnum.ENTRADA_SAIDA) {
-            boolean entrada = marcacoes.stream().anyMatch(f -> f.presente && "QR_ENTRADA".equalsIgnoreCase(f.origem));
-            boolean saida = marcacoes.stream().anyMatch(f -> f.presente && "QR_SAIDA".equalsIgnoreCase(f.origem));
+            boolean entrada = marcacoes.stream().anyMatch(f -> f.presente
+                    && List.of("QR_ENTRADA", "BUSCA_ENTRADA").contains(f.origem.toUpperCase()));
+            boolean saida = marcacoes.stream().anyMatch(f -> f.presente
+                    && List.of("QR_SAIDA", "BUSCA_SAIDA").contains(f.origem.toUpperCase()));
             return entrada && saida;
         }
         return marcacoes.stream().filter(f -> "MANUAL".equalsIgnoreCase(f.tipo))
-                .max(java.util.Comparator.comparing(Marca::dataHora))
+                .max(java.util.Comparator.comparing(Marca::dataHora).thenComparingLong(Marca::id))
                 .map(Marca::presente).orElse(false);
     }
 
@@ -139,5 +144,5 @@ public final class PostgresRelatorioRepository implements RelatorioRepositoryPor
     private record GrupoFrequencia(long idInscricaoEvento, long idInscricao, long idUsuario,
                                    String evento, String atividade, String nome, String email,
                                    boolean cancelada, String criterio, List<Marca> marcacoes) { }
-    private record Marca(LocalDateTime dataHora, String origem, boolean presente, String tipo) { }
+    private record Marca(long id, Instant dataHora, String origem, boolean presente, String tipo) { }
 }

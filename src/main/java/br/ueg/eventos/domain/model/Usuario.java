@@ -14,12 +14,17 @@ public class Usuario {
     private Integer id;
     private String nome;
     private String email;
+    private String cpf;
     private String senhaHash; // A senha será armazenada como hash para maior segurança
     private Perfil perfil;
 
     // Construtores:
     // CONSTRUTOR 1: Para criar um usuário NOVO (O Java deixa o 'id' como null temporariamente, quem vai preencher o id é o banco de dados)
     public Usuario(String nome, String email, String senhaLimpa, String hashCriptografado, Perfil perfil) {
+        this(nome, email, senhaLimpa, hashCriptografado, perfil, null);
+    }
+
+    public Usuario(String nome, String email, String senhaLimpa, String hashCriptografado, Perfil perfil, String cpf) {
         this.id = null;
         alterarNome(nome);
         alterarEmail(email);
@@ -34,10 +39,15 @@ public class Usuario {
         if (perfil == null)
             throw new RegraNegocioException("O perfil não pode ser nulo!");
         this.perfil = perfil;
+        alterarCpf(cpf);
     }
 
     // CONSTRUTOR 2: Para buscas.
     public Usuario(Integer id, String nome, String email, String hashCriptografado, Perfil perfil) {
+        this(id, nome, email, hashCriptografado, perfil, null);
+    }
+
+    public Usuario(Integer id, String nome, String email, String hashCriptografado, Perfil perfil, String cpf) {
         this.id = id;
         alterarNome(nome);
         alterarEmail(email);
@@ -51,6 +61,7 @@ public class Usuario {
         if (perfil == null)
             throw new RegraNegocioException("O perfil não pode ser nulo!");
         this.perfil = perfil;
+        alterarCpf(cpf);
     }
 
     // Métodos de ação
@@ -71,6 +82,32 @@ public class Usuario {
         }
 
         this.email = novoEmail.trim().toLowerCase(Locale.ROOT);
+    }
+
+    public void alterarCpf(String novoCpf) {
+        if (novoCpf == null || novoCpf.isBlank()) {
+            this.cpf = null;
+            return;
+        }
+        String digitos = novoCpf.replaceAll("\\D", "");
+        if (!cpfValido(digitos)) {
+            throw new RegraNegocioException("Informe um CPF válido com 11 dígitos.");
+        }
+        this.cpf = digitos;
+    }
+
+    private boolean cpfValido(String cpf) {
+        if (cpf == null || !cpf.matches("[0-9]{11}") || cpf.chars().distinct().count() == 1) return false;
+        int soma = 0;
+        for (int i = 0; i < 9; i++) soma += (cpf.charAt(i) - '0') * (10 - i);
+        int primeiro = (soma * 10) % 11;
+        if (primeiro == 10) primeiro = 0;
+        if (primeiro != cpf.charAt(9) - '0') return false;
+        soma = 0;
+        for (int i = 0; i < 10; i++) soma += (cpf.charAt(i) - '0') * (11 - i);
+        int segundo = (soma * 10) % 11;
+        if (segundo == 10) segundo = 0;
+        return segundo == cpf.charAt(10) - '0';
     }
 
     // Método auxiliar focado puramente em checar a força da senha digitada
@@ -122,6 +159,8 @@ public class Usuario {
     public String getEmail() {
         return email;
     }
+
+    public String getCpf() { return cpf; }
 
     public String getSenhaHash() {
         return senhaHash;

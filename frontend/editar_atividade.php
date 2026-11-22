@@ -35,11 +35,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $permitido) {
         'vagas' => $vagas,
         'controlaVagas' => !empty($_POST['controla_vagas']),
         'tipoFrequencia' => $_POST['tipoFrequencia'] ?? 'CHECKIN',
+        'metodoIdentificacaoCheckin' => $_POST['metodoIdentificacaoCheckin'] ?? 'QR',
         'trilha' => $nomeTrilha !== '' ? ['nome' => $nomeTrilha] : null,
     ];
     $resultado = chamar_api('PUT', "/atividades/{$idAtividade}", $dados, $headers);
     if ($resultado['erro']) $erro = $resultado['msg_erro'];
-    else { header("Location: atividades.php?evento_id={$idEvento}&atualizada=1"); exit; }
+    else {
+        $_SESSION['atividade_feedback'] = [
+            'sucesso' => 'Atividade atualizada.',
+            'avisos' => $resultado['corpo']['avisos'] ?? [],
+        ];
+        header("Location: atividades.php?evento_id={$idEvento}");
+        exit;
+    }
 }
 
 if ($atividade && $_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -62,6 +70,7 @@ ob_start();
     <label><input type="checkbox" name="controla_vagas" value="1" <?= !empty($_POST['controla_vagas']) || (($_SERVER['REQUEST_METHOD'] !== 'POST') && !empty($atividade['controlaVagas'])) ? 'checked' : '' ?>> Limitar vagas</label>
     <div class="form-linha"><div class="form-grupo"><label>Trilha</label><input name="trilha_nome" value="<?= htmlspecialchars($trilha) ?>"></div><div class="form-grupo"><label>Local cadastrado</label><select name="local_id"><option value="0">A definir</option><?php foreach ($locais as $localDisponivel): ?><option value="<?= (int)$localDisponivel['id'] ?>" <?= (int)$localDisponivel['id'] === $localId ? 'selected' : '' ?>><?= htmlspecialchars($localDisponivel['nome'] ?? '') ?></option><?php endforeach; ?></select></div></div>
     <div class="form-grupo"><label>Critério de frequência</label><select name="tipoFrequencia"><?php foreach (['CHECKIN','ENTRADA_SAIDA','MANUAL'] as $opcao): ?><option value="<?= $opcao ?>" <?= ($_POST['tipoFrequencia'] ?? $atividade['tipoFrequencia'] ?? 'CHECKIN') === $opcao ? 'selected' : '' ?>><?= htmlspecialchars($opcao) ?></option><?php endforeach; ?></select></div>
+    <div class="form-grupo"><label>Identificação no check-in</label><select name="metodoIdentificacaoCheckin"><option value="QR" <?= ($_POST['metodoIdentificacaoCheckin'] ?? $atividade['metodoIdentificacaoCheckin'] ?? 'QR') === 'QR' ? 'selected' : '' ?>>QR Code</option><option value="NOME_CPF" <?= ($_POST['metodoIdentificacaoCheckin'] ?? $atividade['metodoIdentificacaoCheckin'] ?? 'QR') === 'NOME_CPF' ? 'selected' : '' ?>>Busca por nome ou CPF</option></select></div>
     <button class="btn btn-primario">Salvar alterações</button>
 </form></div><?php endif; ?>
 <?php

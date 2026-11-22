@@ -66,6 +66,7 @@ Exemplo de atividade:
   "horaFim": "10:30:00",
   "tipo": "Oficina",
   "tipoFrequencia": "CHECKIN",
+  "metodoIdentificacaoCheckin": "QR",
   "controlaVagas": true,
   "vagas": 30,
   "local": { "id": 1, "nome": "Laboratório 1" },
@@ -74,6 +75,7 @@ Exemplo de atividade:
 ```
 
 `tipoFrequencia` aceita `CHECKIN`, `ENTRADA_SAIDA` ou `MANUAL`. A hora final pode ser no dia seguinte se a atividade atravessar a meia-noite; o período completo deve permanecer dentro do evento.
+`metodoIdentificacaoCheckin` aceita `QR` ou `NOME_CPF`. A API não bloqueia atividades no mesmo local com horário sobreposto: responde com `avisos` no POST/PUT para que o organizador avalie o conflito. O campo `vagas` é o saldo de vagas ainda disponíveis; zero com `controlaVagas=true` significa lotação.
 
 ## Inscrição, frequência e certificado
 
@@ -86,14 +88,21 @@ Exemplo de atividade:
 | `DELETE /inscricoes/evento/{id}` | Cancela a inscrição e libera vagas quando o prazo ainda permite. |
 | `GET /inscricoes/evento/{id}/checkin-qr` | Emite QR assinado da inscrição, não dos dados pessoais. |
 | `POST /frequencias/checkin-qr` | Exemplo: `{ "token": "...", "idAtividade": 1, "acao": "CHECKIN" }`. |
-| `POST /frequencias/manual` | Registra presença/ausência em atividade configurada como manual. |
+| `GET /frequencias/atividades-validaveis` | Lista atividades do organizador/administrador e atividades explicitamente atribuídas ao colaborador autenticado. |
+| `GET /atividades/{id}/participantes-checkin?q=...` | Busca inscritos ativos daquela atividade por nome ou CPF, conforme o método configurado; CPF é mascarado na resposta. |
+| `POST /frequencias/checkin-participante` | Registra check-in por identificação nominal: `{ "idInscricaoEvento": 1, "idAtividade": 1, "acao": "CHECKIN" }`. |
+| `POST /frequencias/manual` | Somente administrador/organizador pode corrigir presença ou falta; cada correção é registrada com origem `CORRECAO_ORGANIZADOR`, responsável e instante. |
+| `GET /frequencias/atividade/{id}/participantes` | Lista presença atual dos inscritos ativos para correção pelo organizador. |
+| `POST /atividades/{id}/colaboradores` | Organizador vincula uma conta existente por e-mail para registrar presença nesta atividade. |
+| `GET /atividades/{id}/colaboradores` | Lista colaboradores vinculados; acesso restrito a administrador/organizador. |
+| `DELETE /atividades/{id}/colaboradores/{idUsuario}` | Remove o vínculo do colaborador com a atividade. |
 | `GET /inscricoes/evento/{id}/frequencia-certificado` | Consulta presença acumulada, carga horária máxima do evento, critério de elegibilidade, carga horária do certificado e elegibilidade da própria conta. |
 | `GET /inscricoes/evento/{id}/certificado.pdf` | Emite PDF pessoal após o fim do evento, se o mínimo foi atingido. |
 | `GET /eventos/{idEvento}/pessoas-programacao/{idPessoa}/certificado.pdf?papel=PALESTRANTE` | Emite certificado de palestrante/apresentador após o evento; exige organizador autenticado. |
 
-A ação do QR depende da política: `CHECKIN`; `ENTRADA` e `SAIDA`; ou `PRESENTE` e `AUSENTE`. O responsável autenticado precisa ser administrador ou organizador do evento.
+A ação de registro depende da política: `CHECKIN`; `ENTRADA` e `SAIDA`; ou `PRESENTE`. Administradores e organizadores podem registrar e corrigir presença; colaboradores vinculados podem somente registrar presença, sem marcar ausência ou alterar o status posteriormente. O método QR ou busca por nome/CPF é configurado por atividade. A conta do participante nunca recebe permissão para confirmar a própria frequência.
 
-O evento configura `criterioFrequenciaCertificado` como `PERCENTUAL` (com `frequenciaMinima` em 50, 75 ou 100) ou `HORAS` (com `frequenciaMinimaMinutos`). A carga impressa no certificado pode ser `DINAMICA` (minutos validados do participante) ou `FIXA` (valor de `cargaHorariaFixaMinutos`). Atividades simultâneas contribuem uma vez para o total do evento, usando a duração da atividade mais longa do bloco; a presença validada em qualquer atividade escolhida desse bloco recebe esse mesmo crédito.
+O evento configura `criterioFrequenciaCertificado` como `PERCENTUAL` (com `frequenciaMinima` em 50, 75 ou 100) ou `HORAS` (com `frequenciaMinimaMinutos`). A carga impressa no certificado pode ser `DINAMICA` (minutos validados do participante) ou `FIXA` (valor de `cargaHorariaFixaMinutos`). O cálculo divide a programação pelos limites de início/fim: cada trecho simultâneo conta uma vez no total do evento, e trechos de horários diferentes se somam. A carga individual considera os trechos das atividades escolhidas em que a frequência foi validada.
 
 ## Avaliações e relatórios
 

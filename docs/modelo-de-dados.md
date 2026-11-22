@@ -7,15 +7,16 @@ O esquema vazio é montado automaticamente na inicialização da API. As migraç
 | Tabela | Responsabilidade e relações principais |
 |---|---|
 | `eventos` | Dados, período, modalidade, estado, capacidade, política de certificado, fuso e prazo de cancelamento. |
-| `usuarios` | Contas, hash da senha e perfil. O e-mail normalizado é único. |
+| `usuarios` | Contas, hash da senha, perfil e CPF opcional validado/único. O e-mail normalizado é único. |
 | `vinculos_organizadores` | Relação muitos-para-muitos entre usuário e evento; identifica o criador principal. |
-| `atividades` | Programação de um evento, horário, categoria, local, trilha, vagas e política de frequência. |
+| `atividades` | Programação de um evento, horário, categoria, local, trilha, vagas, política de frequência e método de identificação no check-in. |
+| `vinculos_colaboradores` | Permissão de check-in atribuída por organizador a um usuário em uma atividade específica. |
 | `locais` | Espaços cadastrados para serem associados a atividades. Excluir local remove o vínculo, preservando o nome histórico da atividade. |
 | `categorias`, `trilhas` | Classificações vinculadas a cada evento e reutilizadas pela programação. |
 | `pessoas_programacao`, `atividade_pessoas` | Palestrantes, apresentadores e responsáveis, sem exigir conta de usuário. |
 | `inscricoes_evento` | Inscrição do participante no evento; chave única evento/usuário. É a identidade representada pelo QR único. |
 | `inscricoes` | Escolhas de atividades dentro da inscrição no evento. Índice parcial impede duplicidade ativa. |
-| `frequencias` | Marcações com data/hora, tipo, origem, presença e responsável que validou. |
+| `frequencias` | Marcações com instante absoluto (`TIMESTAMPTZ`), tipo, origem, presença e responsável que validou. Correções do organizador são novas linhas auditáveis, sem apagar o registro anterior. |
 | `questionarios`, `questoes`, `respostas` | Avaliações de uma atividade, perguntas tipadas e respostas individuais. Índice único impede resposta repetida por questão/usuário. |
 | `certificados` | Histórico de emissão para participantes e pessoas da programação, com carga horária calculada em minutos. |
 | `schema_migrations` | Versões aplicadas pelo inicializador PostgreSQL. |
@@ -26,7 +27,10 @@ O esquema vazio é montado automaticamente na inicialização da API. As migraç
 - Índices apoiam filtros de eventos, agenda por evento/data, inscrições e avaliações publicadas.
 - Índices únicos impedem e-mail repetido ignorando caixa, inscrição duplicada no evento, atividade duplicada ativa e resposta repetida à mesma questão.
 - Reservas de vaga do evento usam bloqueio da linha do evento; a reserva de vaga de atividade é um `UPDATE` condicional, evitando exceder o saldo em requisições concorrentes.
-- Flags legadas permanecem como `INTEGER` restrito a 0/1; datas de evento/atividade são armazenadas em texto ISO para manter compatibilidade com os modelos existentes.
+- Flags legadas permanecem como `INTEGER` restrito a 0/1; datas de evento/atividade são armazenadas em texto ISO para manter compatibilidade com os modelos existentes. Marcações de frequência são `TIMESTAMPTZ`; a aplicação grava `Instant` e converte para o fuso do evento quando precisa apresentar horário local.
+- O número de vagas de atividade representa o saldo restante. A reserva é atômica e a inscrição cancelada devolve a vaga.
+- Atividades no mesmo local e em horários sobrepostos geram um aviso não bloqueante no cadastro/edição. Isso permite ao organizador revisar o conflito sem impedir uma configuração intencional.
+- O certificado considera a união dos intervalos de programação: períodos simultâneos contam uma vez e períodos diferentes se somam. A presença individual só conta durante os trechos das atividades escolhidas com validação efetiva.
 
 ## Evolução
 
@@ -41,5 +45,7 @@ O esquema vazio é montado automaticamente na inicialização da API. As migraç
 | V7 | Chave estrangeira entre atividade e local cadastrado. |
 | V8 | Registro de certificados para palestrantes e apresentadores sem exigir conta de usuário. |
 | V9 | Critério de elegibilidade por percentual/horas e modo de carga horária fixa/dinâmica do certificado do evento. |
+| V10 | Método QR ou nome/CPF por atividade, CPF opcional e vínculos de colaboradores por atividade; índice de proteção contra marcações duplicadas. |
+| V11 | Conversão das marcações para instante absoluto com o fuso histórico de cada evento. |
 
 Migrações já aplicadas não devem ser alteradas. Mudanças posteriores devem ser acrescentadas como nova versão.

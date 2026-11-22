@@ -2,13 +2,14 @@ package br.ueg.eventos.infrastructure.adapter.out.persistence;
 
 import br.ueg.eventos.application.port.out.FrequenciaRepositoryPort;
 import br.ueg.eventos.domain.model.Frequencia;
+import br.ueg.eventos.domain.exception.RegraNegocioException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -72,6 +73,9 @@ public class PostgresFrequenciaRepository extends PostgresRepositorySupport
                             "A frequência atualizada não foi encontrada."
                     ));
         } catch (SQLException e) {
+            if ("23505".equals(e.getSQLState())) {
+                throw new RegraNegocioException("Esta marcação de presença já foi registrada.");
+            }
             throw new IllegalStateException(
                     "Erro ao salvar frequência no PostgreSQL.", e
             );
@@ -138,7 +142,7 @@ public class PostgresFrequenciaRepository extends PostgresRepositorySupport
     private void preencherParametros(
             PreparedStatement statement,
             Frequencia frequencia) throws SQLException {
-        statement.setString(1, frequencia.getDataHora().toString());
+        statement.setTimestamp(1, Timestamp.from(frequencia.getDataHora()));
         statement.setString(2, frequencia.getOrigem());
         if (frequencia.getIdResponsavel() == null) {
             statement.setNull(3, Types.INTEGER);
@@ -157,7 +161,7 @@ public class PostgresFrequenciaRepository extends PostgresRepositorySupport
 
         return new Frequencia(
                 resultSet.getInt("id"),
-                LocalDateTime.parse(resultSet.getString("data_hora")),
+                resultSet.getTimestamp("data_hora").toInstant(),
                 resultSet.getString("origem"),
                 idResponsavel,
                 resultSet.getInt("presente") == 1,

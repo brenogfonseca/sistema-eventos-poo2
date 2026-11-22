@@ -2,12 +2,12 @@ package br.ueg.eventos.application.port.in.frequencia;
 
 import br.ueg.eventos.domain.model.Frequencia;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface RegistrarFrequenciaPort {
 
     class ComandoRegistrarFrequencia {
-        public final LocalDateTime dataHora;
+        public final Instant dataHora;
         public final String origem;
         public final Integer idResponsavel;
         public final boolean presente;
@@ -15,7 +15,7 @@ public interface RegistrarFrequenciaPort {
         public final String tipo;
 
         public ComandoRegistrarFrequencia(
-                LocalDateTime dataHora,
+                Instant dataHora,
                 String origem,
                 Integer idResponsavel,
                 boolean presente,

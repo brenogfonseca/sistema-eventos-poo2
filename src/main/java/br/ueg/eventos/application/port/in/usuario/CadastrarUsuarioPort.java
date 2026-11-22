@@ -17,12 +17,18 @@ public interface CadastrarUsuarioPort {
         public final String email;
         public final String senhaLimpa;
         public final Perfil perfil;
+        public final String cpf;
 
         public ComandoCadastrarUsuario(String nome, String email, String senhaLimpa, Perfil perfil) {
+            this(nome, email, senhaLimpa, perfil, null);
+        }
+
+        public ComandoCadastrarUsuario(String nome, String email, String senhaLimpa, Perfil perfil, String cpf) {
             this.nome = nome;
             this.email = email;
             this.senhaLimpa = senhaLimpa;
             this.perfil = perfil;
+            this.cpf = cpf;
         }
     }
 

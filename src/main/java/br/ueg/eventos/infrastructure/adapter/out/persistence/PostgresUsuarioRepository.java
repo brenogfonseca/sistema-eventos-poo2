@@ -16,13 +16,13 @@ public class PostgresUsuarioRepository extends PostgresRepositorySupport
         implements UsuarioRepositoryPort {
 
     private static final String INSERT = """
-            INSERT INTO usuarios (nome, email, senha_hash, perfil)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO usuarios (nome, email, senha_hash, perfil, cpf)
+            VALUES (?, ?, ?, ?, ?)
             """;
 
     private static final String UPDATE = """
             UPDATE usuarios
-            SET nome = ?, email = ?, senha_hash = ?, perfil = ?
+            SET nome = ?, email = ?, senha_hash = ?, perfil = ?, cpf = ?
             WHERE id = ?
             """;
 
@@ -55,7 +55,7 @@ public class PostgresUsuarioRepository extends PostgresRepositorySupport
             try (PreparedStatement statement =
                          connection.prepareStatement(UPDATE)) {
                 preencherParametros(statement, usuario);
-                statement.setInt(5, usuario.getId());
+                statement.setInt(6, usuario.getId());
                 if (statement.executeUpdate() == 0) {
                     throw new SQLException(
                             "Não existe usuário com id " + usuario.getId()
@@ -167,6 +167,8 @@ public class PostgresUsuarioRepository extends PostgresRepositorySupport
         statement.setString(2, usuario.getEmail());
         statement.setString(3, usuario.getSenhaHash());
         statement.setString(4, usuario.getPerfil().name());
+        if (usuario.getCpf() == null) statement.setNull(5, java.sql.Types.VARCHAR);
+        else statement.setString(5, usuario.getCpf());
     }
 
     private Usuario mapearUsuario(ResultSet resultSet)
@@ -176,7 +178,8 @@ public class PostgresUsuarioRepository extends PostgresRepositorySupport
                 resultSet.getString("nome"),
                 resultSet.getString("email"),
                 resultSet.getString("senha_hash"),
-                Perfil.valueOf(resultSet.getString("perfil"))
+                Perfil.valueOf(resultSet.getString("perfil")),
+                resultSet.getString("cpf")
         );
     }
 }

@@ -3,6 +3,7 @@ package br.ueg.eventos.infrastructure.adapter.out.persistence;
 import br.ueg.eventos.application.port.out.AtividadeRepositoryPort;
 import br.ueg.eventos.domain.model.Atividade;
 import br.ueg.eventos.domain.model.Local;
+import br.ueg.eventos.domain.model.MetodoIdentificacaoCheckinEnum;
 import br.ueg.eventos.domain.model.TipoFrequenciaEnum;
 import br.ueg.eventos.domain.model.Trilha;
 
@@ -36,8 +37,9 @@ public class PostgresAtividadeRepository implements AtividadeRepositoryPort {
                 trilha_nome,
                 trilha_evento_id,
                 categoria_id,
-                descricao
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                descricao,
+                metodo_identificacao_checkin
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     private static final String UPDATE = """
@@ -57,7 +59,8 @@ public class PostgresAtividadeRepository implements AtividadeRepositoryPort {
                 trilha_nome = ?,
                 trilha_evento_id = ?,
                 categoria_id = ?,
-                descricao = ?
+                descricao = ?,
+                metodo_identificacao_checkin = ?
             WHERE id = ?
             """;
 
@@ -146,6 +149,23 @@ public class PostgresAtividadeRepository implements AtividadeRepositoryPort {
     }
 
     @Override
+    public List<Atividade> listarPorLocal(Long idLocal) {
+        if (idLocal == null || idLocal <= 0) return List.of();
+        String sql = "SELECT * FROM atividades WHERE local_id = ? ORDER BY data, hora_inicio, id";
+        try (Connection connection = connectionFactory.abrirConexao();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, idLocal);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<Atividade> atividades = new ArrayList<>();
+                while (resultSet.next()) atividades.add(mapearAtividade(resultSet));
+                return atividades;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Erro ao consultar atividades por local no PostgreSQL.", e);
+        }
+    }
+
+    @Override
     public void excluir(Long id) {
         if (id == null || id <= 0) {
             return;
@@ -230,7 +250,7 @@ public class PostgresAtividadeRepository implements AtividadeRepositoryPort {
             Atividade atividade) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(UPDATE)) {
             preencherParametros(statement, atividade, connection);
-            statement.setLong(17, atividade.getId());
+            statement.setLong(18, atividade.getId());
 
             if (statement.executeUpdate() == 0) {
                 throw new SQLException(
@@ -296,6 +316,7 @@ public class PostgresAtividadeRepository implements AtividadeRepositoryPort {
             statement.setLong(15, buscarOuCriarCategoria(connection, atividade.getEventoId(), atividade.getTipo().trim()));
         }
         statement.setString(16, atividade.getDescricao());
+        statement.setString(17, atividade.getMetodoIdentificacaoCheckin().name());
     }
 
     private String buscarNomeLocal(Connection connection, Long idLocal) throws SQLException {
@@ -399,7 +420,8 @@ public class PostgresAtividadeRepository implements AtividadeRepositoryPort {
                 resultSet.getInt("vagas"),
                 resultSet.getString("tipo"),
                 tipoFrequencia,
-                trilha
+                trilha,
+                MetodoIdentificacaoCheckinEnum.valueOf(resultSet.getString("metodo_identificacao_checkin"))
         );
         atividade.alterarDescricao(resultSet.getString("descricao"));
         return atividade;

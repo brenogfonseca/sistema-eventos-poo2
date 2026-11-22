@@ -25,6 +25,8 @@ import javafx.stage.Stage;
 import javax.imageio.ImageIO;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -91,17 +93,23 @@ public final class DesktopApplication extends Application {
         nome.setPromptText("Nome completo");
         TextField email = new TextField();
         email.setPromptText("E-mail");
+        TextField cpf = new TextField();
+        cpf.setPromptText("CPF (opcional)");
         PasswordField senha = new PasswordField();
         senha.setPromptText("Senha forte");
         Label status = new Label("Use ao menos 8 caracteres, com maiúscula, minúscula, número e símbolo.");
         Button cadastrar = new Button("Criar conta");
         cadastrar.setOnAction(e -> executar(status, () -> {
-            api.post("/usuarios", Map.of("nome", nome.getText().trim(),
-                    "email", email.getText().trim(), "senha", senha.getText()), null);
+            Map<String, Object> dados = new HashMap<>();
+            dados.put("nome", nome.getText().trim());
+            dados.put("email", email.getText().trim());
+            dados.put("senha", senha.getText());
+            if (!cpf.getText().isBlank()) dados.put("cpf", cpf.getText().replaceAll("\\D", ""));
+            api.post("/usuarios", dados, null);
             status.setText("Conta criada. Entre na aba Entrar.");
             senha.clear();
         }));
-        VBox box = new VBox(12, nome, email, senha, cadastrar, status);
+        VBox box = new VBox(12, nome, email, cpf, senha, cadastrar, status);
         box.setPadding(new Insets(28));
         box.setMaxWidth(450);
         return centralizar(box);
@@ -117,6 +125,7 @@ public final class DesktopApplication extends Application {
                 tab("Eventos e programação", eventosTab()),
                 tab("Minhas inscrições e QR", inscricoesTab()),
                 tab("Leitor e frequência", leitorTab()),
+                tab("Corrigir presenças", presencasDesktopTab()),
                 tab("Avaliações", avaliacoesTab()),
                 tab("Relatórios", relatoriosTab()),
                 tab("Criar evento ou atividade", gestaoTab())
@@ -326,42 +335,69 @@ public final class DesktopApplication extends Application {
     }
 
     private Node leitorTab() {
-        ComboBox<EventRow> evento = new ComboBox<>();
-        eventSelectors.add(evento);
-        ComboBox<ActivityRow> atividade = new ComboBox<>();
-        ComboBox<String> acao = new ComboBox<>(FXCollections.observableArrayList("CHECKIN", "ENTRADA", "SAIDA", "PRESENTE", "AUSENTE"));
-        acao.getSelectionModel().selectFirst();
-        atividade.valueProperty().addListener((obs, anterior, atual) -> {
-            if (atual == null) return;
-            String politica = atual.data().path("tipoFrequencia").asText("CHECKIN");
-            List<String> permitidas = switch (politica) {
-                case "ENTRADA_SAIDA" -> List.of("ENTRADA", "SAIDA");
-                case "MANUAL" -> List.of("PRESENTE", "AUSENTE");
-                default -> List.of("CHECKIN");
-            };
-            String selecionada = permitidas.contains(acao.getValue()) ? acao.getValue() : permitidas.get(0);
-            acao.setItems(FXCollections.observableArrayList(permitidas));
-            acao.getSelectionModel().select(selecionada);
-        });
+        ComboBox<CheckinActivityRow> atividade = new ComboBox<>();
         TextArea token = new TextArea();
         token.setPromptText("Cole o token lido do QR Code ou carregue uma imagem PNG/JPG do código.");
-        token.setPrefRowCount(4);
+        token.setPrefRowCount(3);
+        TextField termoBusca = new TextField();
+        termoBusca.setPromptText("Nome ou CPF");
+        ComboBox<CheckinParticipantRow> participante = new ComboBox<>();
+        ComboBox<String> acao = new ComboBox<>();
         Label status = new Label();
-        Button carregarAtividades = new Button("Carregar atividades do evento");
+        Button carregarAtividades = new Button("Carregar minhas atividades autorizadas");
         Button carregarImagem = new Button("Ler QR de uma imagem");
+        Button buscar = new Button("Buscar participante");
         Button enviar = new Button("Registrar presença");
-        carregarAtividades.setOnAction(e -> {
-            EventRow selecionado = evento.getValue();
-            if (selecionado == null) { status.setText("Selecione o evento que está sendo organizado."); return; }
+        VBox blocoQr = new VBox(8, carregarImagem, token);
+        VBox blocoBusca = new VBox(8, termoBusca, buscar, participante);
+        blocoBusca.setVisible(false);
+        blocoBusca.setManaged(false);
+        carregarAtividades.setOnAction(e -> executar(status, () -> {
+            JsonNode resposta = api.get("/frequencias/atividades-validaveis", session);
+            List<CheckinActivityRow> itens = new ArrayList<>();
+            resposta.forEach(item -> itens.add(new CheckinActivityRow(item)));
+            atividade.setItems(FXCollections.observableArrayList(itens));
+            if (!itens.isEmpty()) atividade.getSelectionModel().selectFirst();
+            status.setText(itens.isEmpty() ? "Não há atividades autorizadas para validar."
+                    : itens.size() + " atividade(s) autorizada(s) carregada(s).");
+        }));
+
+        atividade.valueProperty().addListener((obs, anterior, atual) -> {
+            if (atual == null) return;
+            List<String> permitidas = switch (atual.politica()) {
+                case "ENTRADA_SAIDA" -> List.of("ENTRADA", "SAIDA");
+                case "MANUAL" -> List.of("PRESENTE");
+                default -> List.of("CHECKIN");
+            };
+            acao.setItems(FXCollections.observableArrayList(permitidas));
+            acao.getSelectionModel().selectFirst();
+            boolean usaBusca = "NOME_CPF".equals(atual.metodo());
+            blocoBusca.setVisible(usaBusca);
+            blocoBusca.setManaged(usaBusca);
+            blocoQr.setVisible(!usaBusca);
+            blocoQr.setManaged(!usaBusca);
+            participante.getItems().clear();
+            status.setText("Identificação: " + (usaBusca ? "nome/CPF" : "QR Code")
+                    + " · frequência: " + atual.politica());
+        });
+
+        buscar.setOnAction(e -> {
+            CheckinActivityRow selecionada = atividade.getValue();
+            if (selecionada == null || termoBusca.getText().isBlank()) {
+                status.setText("Selecione uma atividade e informe nome ou CPF."); return;
+            }
             executar(status, () -> {
-                JsonNode resposta = api.get("/atividades/evento/" + selecionado.id(), session);
-                List<ActivityRow> itens = new ArrayList<>();
-                resposta.forEach(a -> itens.add(new ActivityRow(a)));
-                atividade.setItems(FXCollections.observableArrayList(itens));
-                if (!itens.isEmpty()) atividade.getSelectionModel().selectFirst();
-                status.setText("Selecione uma atividade. A API confirma que você organiza este evento.");
+                String q = URLEncoder.encode(termoBusca.getText().trim(), StandardCharsets.UTF_8);
+                JsonNode resposta = api.get("/atividades/" + selecionada.idAtividade()
+                        + "/participantes-checkin?q=" + q, session);
+                List<CheckinParticipantRow> itens = new ArrayList<>();
+                resposta.forEach(item -> itens.add(new CheckinParticipantRow(item)));
+                participante.setItems(FXCollections.observableArrayList(itens));
+                if (!itens.isEmpty()) participante.getSelectionModel().selectFirst();
+                status.setText(itens.isEmpty() ? "Nenhum participante encontrado." : itens.size() + " participante(s) encontrado(s).");
             });
         });
+
         carregarImagem.setOnAction(e -> {
             FileChooser chooser = new FileChooser();
             chooser.setTitle("Abrir imagem do QR Code");
@@ -374,22 +410,83 @@ public final class DesktopApplication extends Application {
                 String valor = new MultiFormatReader().decode(
                         new BinaryBitmap(new HybridBinarizer(new BufferedImageLuminanceSource(imagem)))).getText();
                 token.setText(valor);
-                status.setText("QR Code lido. Confira a atividade e confirme a presença.");
+                status.setText("QR Code lido. Confira atividade e ação antes de confirmar.");
             });
         });
+
         enviar.setOnAction(e -> {
-            ActivityRow selecionada = atividade.getValue();
-            if (selecionada == null || token.getText().isBlank()) { status.setText("Selecione uma atividade e leia o QR Code."); return; }
+            CheckinActivityRow selecionada = atividade.getValue();
+            if (selecionada == null) { status.setText("Selecione uma atividade."); return; }
             executar(status, () -> {
-                api.post("/frequencias/checkin-qr", Map.of("token", token.getText().trim(),
-                        "idAtividade", selecionada.id(), "acao", acao.getValue()), session);
-                status.setText("Frequência registrada e auditada no evento.");
-                token.clear();
+                if ("NOME_CPF".equals(selecionada.metodo())) {
+                    CheckinParticipantRow escolhido = participante.getValue();
+                    if (escolhido == null) { status.setText("Busque e selecione um participante."); return; }
+                    api.post("/frequencias/checkin-participante", Map.of(
+                            "idInscricaoEvento", escolhido.idInscricaoEvento(),
+                            "idAtividade", selecionada.idAtividade(), "acao", acao.getValue()), session);
+                    termoBusca.clear();
+                    participante.getItems().clear();
+                } else {
+                    if (token.getText().isBlank()) { status.setText("Leia o QR Code do participante."); return; }
+                    api.post("/frequencias/checkin-qr", Map.of("token", token.getText().trim(),
+                            "idAtividade", selecionada.idAtividade(), "acao", acao.getValue()), session);
+                    token.clear();
+                }
+                status.setText("Presença registrada e auditada. Colaboradores não podem corrigir ou marcar falta.");
             });
         });
-        VBox content = new VBox(12, new Label("Evento"), evento, carregarAtividades, new Label("Atividade"), atividade,
-                new Label("Ação conforme a política da atividade"), acao,
-                new HBox(8, carregarImagem, enviar), token, status);
+        VBox content = new VBox(12, carregarAtividades, new Label("Atividade autorizada"), atividade,
+                new Label("Ação conforme o critério de frequência"), acao, blocoQr, blocoBusca, enviar, status);
+        content.setPadding(new Insets(18));
+        return content;
+    }
+
+    private Node presencasDesktopTab() {
+        ComboBox<EventRow> evento = new ComboBox<>();
+        eventSelectors.add(evento);
+        ComboBox<ActivityRow> atividade = new ComboBox<>();
+        ComboBox<AttendanceRow> participante = new ComboBox<>();
+        Label status = new Label("Esta tela é exclusiva para organizadores; a API também valida essa permissão.");
+        Button carregarAtividades = new Button("Carregar atividades");
+        Button carregarLista = new Button("Carregar participantes");
+        Button alternar = new Button("Marcar presença/falta");
+        carregarAtividades.setOnAction(e -> {
+            EventRow selecionado = evento.getValue();
+            if (selecionado == null) { status.setText("Selecione um evento."); return; }
+            executar(status, () -> {
+                JsonNode resposta = api.get("/atividades/evento/" + selecionado.id(), session);
+                List<ActivityRow> itens = new ArrayList<>();
+                resposta.forEach(item -> itens.add(new ActivityRow(item)));
+                atividade.setItems(FXCollections.observableArrayList(itens));
+                if (!itens.isEmpty()) atividade.getSelectionModel().selectFirst();
+                status.setText(itens.size() + " atividade(s) carregadas.");
+            });
+        });
+        carregarLista.setOnAction(e -> {
+            ActivityRow selecionada = atividade.getValue();
+            if (selecionada == null) { status.setText("Selecione uma atividade."); return; }
+            executar(status, () -> {
+                JsonNode resposta = api.get("/frequencias/atividade/" + selecionada.id() + "/participantes", session);
+                List<AttendanceRow> itens = new ArrayList<>();
+                resposta.forEach(item -> itens.add(new AttendanceRow(item)));
+                participante.setItems(FXCollections.observableArrayList(itens));
+                if (!itens.isEmpty()) participante.getSelectionModel().selectFirst();
+                status.setText(itens.size() + " participante(s). Cada alteração gera uma correção auditada.");
+            });
+        });
+        alternar.setOnAction(e -> {
+            ActivityRow selecionada = atividade.getValue();
+            AttendanceRow pessoa = participante.getValue();
+            if (selecionada == null || pessoa == null) { status.setText("Selecione atividade e participante."); return; }
+            executar(status, () -> {
+                api.post("/frequencias/manual", Map.of("idInscricaoEvento", pessoa.idInscricaoEvento(),
+                        "idAtividade", selecionada.id(), "presente", !pessoa.presente()), session);
+                carregarLista.fire();
+                status.setText(pessoa.presente() ? "Participante marcado como ausente." : "Participante marcado como presente.");
+            });
+        });
+        VBox content = new VBox(12, evento, carregarAtividades, atividade, carregarLista, participante,
+                alternar, status);
         content.setPadding(new Insets(18));
         return content;
     }
@@ -605,7 +702,8 @@ public final class DesktopApplication extends Application {
                 tab("Editar evento", editarEventoForm()),
                 tab("Nova atividade", criarAtividadeForm()),
                 tab("Editar atividade", editarAtividadeForm()),
-                tab("Pessoas da programação", pessoasTab()));
+                tab("Pessoas da programação", pessoasTab()),
+                tab("Colaboradores", colaboradoresDesktopTab()));
         if ("ADMINISTRADOR".equals(session.perfil())) tabPane.getTabs().add(tab("Locais", locaisTab()));
         return tabPane;
     }
@@ -717,6 +815,7 @@ public final class DesktopApplication extends Application {
         TextField vagas = new TextField();
         CheckBox controlaVagas = new CheckBox("Limitar vagas");
         ComboBox<String> criterio = new ComboBox<>(FXCollections.observableArrayList("CHECKIN", "ENTRADA_SAIDA", "MANUAL"));
+        ComboBox<String> metodoCheckin = new ComboBox<>(FXCollections.observableArrayList("QR", "NOME_CPF"));
         Label status = new Label();
         Button carregar = new Button("Carregar atividades");
         Button salvar = new Button("Salvar atividade");
@@ -746,6 +845,7 @@ public final class DesktopApplication extends Application {
             vagas.setText(Integer.toString(dados.path("vagas").asInt()));
             controlaVagas.setSelected(dados.path("controlaVagas").asBoolean());
             criterio.setValue(dados.path("tipoFrequencia").asText("CHECKIN"));
+            metodoCheckin.setValue(dados.path("metodoIdentificacaoCheckin").asText("QR"));
             long localId = dados.path("local").path("id").asLong(0);
             local.getItems().stream().filter(item -> item.id() == localId).findFirst().ifPresent(local::setValue);
         });
@@ -765,11 +865,12 @@ public final class DesktopApplication extends Application {
                 dados.put("vagas", Integer.parseInt(vagas.getText()));
                 dados.put("controlaVagas", controlaVagas.isSelected());
                 dados.put("tipoFrequencia", criterio.getValue());
+                dados.put("metodoIdentificacaoCheckin", metodoCheckin.getValue());
                 LocalRow localAtual = local.getValue();
                 dados.put("local", localAtual == null ? null : Map.of("id", localAtual.id(), "nome", localAtual.nome()));
                 dados.put("trilha", trilha.getText().isBlank() ? null : Map.of("nome", trilha.getText().trim()));
-                api.put("/atividades/" + atividadeEscolhida.id(), dados, session);
-                status.setText("Atividade atualizada.");
+                JsonNode atualizada = api.put("/atividades/" + atividadeEscolhida.id(), dados, session);
+                status.setText(mensagemAtividade(atualizada, "Atividade atualizada."));
                 carregar.fire();
             });
         });
@@ -786,7 +887,7 @@ public final class DesktopApplication extends Application {
             }));
         });
         VBox content = new VBox(9, evento, carregar, atividade, nome, descricao, data,
-                horaInicio, horaFim, tipo, trilha, local, vagas, controlaVagas, criterio,
+                horaInicio, horaFim, tipo, trilha, local, vagas, controlaVagas, criterio, metodoCheckin,
                 new HBox(8, salvar, excluir), status);
         content.setPadding(new Insets(16));
         return new ScrollPane(content);
@@ -890,6 +991,75 @@ public final class DesktopApplication extends Application {
                 carregarPessoas, pessoasEvento, baixarCertificado,
                 new Label("Atividade"), atividade, nome, organizacao, papel, foto,
                 biografia, vincular, status);
+        content.setPadding(new Insets(16));
+        return new ScrollPane(content);
+    }
+
+    private Node colaboradoresDesktopTab() {
+        ComboBox<EventRow> evento = new ComboBox<>();
+        eventSelectors.add(evento);
+        ComboBox<ActivityRow> atividade = new ComboBox<>();
+        TextField email = new TextField();
+        email.setPromptText("E-mail de uma conta cadastrada");
+        ListView<CollaboratorRow> colaboradores = new ListView<>();
+        colaboradores.setPrefHeight(220);
+        Label status = new Label("O vínculo vale apenas para a atividade selecionada.");
+        Button carregarAtividades = new Button("Carregar atividades");
+        Button carregarEquipe = new Button("Carregar equipe");
+        Button vincular = new Button("Vincular colaborador");
+        Button remover = new Button("Remover colaborador");
+
+        carregarAtividades.setOnAction(e -> {
+            EventRow selecionado = evento.getValue();
+            if (selecionado == null) { status.setText("Selecione um evento."); return; }
+            executar(status, () -> {
+                JsonNode resposta = api.get("/atividades/evento/" + selecionado.id(), session);
+                List<ActivityRow> itens = new ArrayList<>();
+                resposta.forEach(item -> itens.add(new ActivityRow(item)));
+                atividade.setItems(FXCollections.observableArrayList(itens));
+                if (!itens.isEmpty()) atividade.getSelectionModel().selectFirst();
+                status.setText(itens.size() + " atividade(s) carregadas.");
+            });
+        });
+        carregarEquipe.setOnAction(e -> {
+            ActivityRow selecionada = atividade.getValue();
+            if (selecionada == null) { status.setText("Selecione uma atividade."); return; }
+            executar(status, () -> {
+                JsonNode resposta = api.get("/atividades/" + selecionada.id() + "/colaboradores", session);
+                List<CollaboratorRow> itens = new ArrayList<>();
+                resposta.forEach(item -> itens.add(new CollaboratorRow(item)));
+                colaboradores.setItems(FXCollections.observableArrayList(itens));
+                status.setText(itens.size() + " colaborador(es) vinculados.");
+            });
+        });
+        vincular.setOnAction(e -> {
+            ActivityRow selecionada = atividade.getValue();
+            if (selecionada == null || email.getText().isBlank()) {
+                status.setText("Selecione uma atividade e informe o e-mail."); return;
+            }
+            executar(status, () -> {
+                api.post("/atividades/" + selecionada.id() + "/colaboradores",
+                        Map.of("email", email.getText().trim()), session);
+                email.clear();
+                carregarEquipe.fire();
+                status.setText("Colaborador vinculado à atividade.");
+            });
+        });
+        remover.setOnAction(e -> {
+            ActivityRow selecionada = atividade.getValue();
+            CollaboratorRow colaborador = colaboradores.getSelectionModel().getSelectedItem();
+            if (selecionada == null || colaborador == null) {
+                status.setText("Selecione a atividade e o colaborador."); return;
+            }
+            executar(status, () -> {
+                api.delete("/atividades/" + selecionada.id() + "/colaboradores/"
+                        + colaborador.idUsuario(), session);
+                carregarEquipe.fire();
+                status.setText("Acesso removido desta atividade.");
+            });
+        });
+        VBox content = new VBox(10, evento, carregarAtividades, atividade, email,
+                new HBox(8, vincular, carregarEquipe, remover), colaboradores, status);
         content.setPadding(new Insets(16));
         return new ScrollPane(content);
     }
@@ -1011,6 +1181,8 @@ public final class DesktopApplication extends Application {
         TextField vagas = new TextField("0"); vagas.setPromptText("0 = ilimitadas");
         ComboBox<String> criterio = new ComboBox<>(FXCollections.observableArrayList("CHECKIN", "ENTRADA_SAIDA", "MANUAL"));
         criterio.getSelectionModel().selectFirst();
+        ComboBox<String> metodoCheckin = new ComboBox<>(FXCollections.observableArrayList("QR", "NOME_CPF"));
+        metodoCheckin.getSelectionModel().selectFirst();
         Label status = new Label();
         Button salvar = new Button("Criar atividade");
         salvar.setOnAction(e -> {
@@ -1029,16 +1201,17 @@ public final class DesktopApplication extends Application {
                 dados.put("controlaVagas", numeroVagas > 0);
                 dados.put("vagas", Math.max(0, numeroVagas));
                 dados.put("tipoFrequencia", criterio.getValue());
+                dados.put("metodoIdentificacaoCheckin", metodoCheckin.getValue());
                 LocalRow localSelecionado = local.getValue();
                 dados.put("local", localSelecionado == null ? null
                         : Map.of("id", localSelecionado.id(), "nome", localSelecionado.nome()));
                 dados.put("trilha", trilha.getText().isBlank() ? null : Map.of("nome", trilha.getText().trim()));
-                api.post("/atividades", dados, session);
-                status.setText("Atividade criada.");
+                JsonNode criada = api.post("/atividades", dados, session);
+                status.setText(mensagemAtividade(criada, "Atividade criada."));
             });
         });
         VBox content = new VBox(9, evento, nome, descricao, data, horaInicio, horaFim, categoria,
-                local, trilha, vagas, criterio, salvar, status);
+                local, trilha, vagas, criterio, metodoCheckin, salvar, status);
         content.setPadding(new Insets(16));
         return new ScrollPane(content);
     }
@@ -1097,6 +1270,14 @@ public final class DesktopApplication extends Application {
         }
     }
 
+    private String mensagemAtividade(JsonNode resposta, String sucesso) {
+        JsonNode avisos = resposta.path("avisos");
+        if (!avisos.isArray() || avisos.size() == 0) return sucesso;
+        List<String> textos = new ArrayList<>();
+        avisos.forEach(aviso -> textos.add(aviso.asText()));
+        return sucesso + " Aviso: " + String.join(" ", textos);
+    }
+
     private Node centralizar(Node node) {
         StackPane pane = new StackPane(node);
         pane.setPadding(new Insets(18));
@@ -1113,6 +1294,39 @@ public final class DesktopApplication extends Application {
         long id() { return data.path("id").asLong(); }
         @Override public String toString() {
             return data.path("nome").asText("Atividade") + " · " + data.path("tipoFrequencia").asText("CHECKIN");
+        }
+    }
+    private record CheckinActivityRow(JsonNode data) {
+        long idAtividade() { return data.path("idAtividade").asLong(); }
+        String politica() { return data.path("tipoFrequencia").asText("CHECKIN"); }
+        String metodo() { return data.path("metodoIdentificacaoCheckin").asText("QR"); }
+        @Override public String toString() {
+            return data.path("tituloEvento").asText("Evento") + " · "
+                    + data.path("nomeAtividade").asText("Atividade") + " · "
+                    + data.path("data").asText("") + " "
+                    + data.path("horaInicio").asText("") + "–" + data.path("horaFim").asText("");
+        }
+    }
+    private record CheckinParticipantRow(JsonNode data) {
+        long idInscricaoEvento() { return data.path("idInscricaoEvento").asLong(); }
+        @Override public String toString() {
+            return data.path("nome").asText("Participante") + " · "
+                    + data.path("cpfMascarado").asText("CPF não cadastrado");
+        }
+    }
+    private record AttendanceRow(JsonNode data) {
+        long idInscricaoEvento() { return data.path("idInscricaoEvento").asLong(); }
+        boolean presente() { return data.path("presente").asBoolean(); }
+        @Override public String toString() {
+            return data.path("nome").asText("Participante") + " · "
+                    + data.path("cpfMascarado").asText("CPF não cadastrado") + " · "
+                    + (presente() ? "Presente" : "Ausente / sem validação");
+        }
+    }
+    private record CollaboratorRow(JsonNode data) {
+        long idUsuario() { return data.path("idUsuario").asLong(); }
+        @Override public String toString() {
+            return data.path("nome").asText("Colaborador") + " · " + data.path("email").asText("");
         }
     }
     private record RegistrationRow(JsonNode data) {

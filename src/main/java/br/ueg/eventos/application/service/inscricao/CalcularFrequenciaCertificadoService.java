@@ -17,13 +17,13 @@ import br.ueg.eventos.domain.model.TipoFrequenciaEnum;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
-/** Calcula a frequência do evento; cada bloco de atividades simultâneas usa sua maior duração. */
+/** Calcula carga do evento pela união dos horários e crédito individual pelas atividades validadas. */
 public class CalcularFrequenciaCertificadoService implements CalcularFrequenciaCertificadoPort {
     private final InscricaoEventoRepositoryPort inscricaoEventoRepository;
     private final InscricaoRepositoryPort inscricaoRepository;
@@ -63,25 +63,38 @@ public class CalcularFrequenciaCertificadoService implements CalcularFrequenciaC
                 .map(IntervaloAtividade::de)
                 .sorted(Comparator.comparing(IntervaloAtividade::inicio))
                 .toList();
+        Map<Long, Boolean> presencaValidada = new HashMap<>();
+        for (IntervaloAtividade intervalo : intervalos) {
+            Inscricao selecao = selecoesAtivas.get(intervalo.atividade().getId());
+            if (selecao != null) {
+                presencaValidada.put(intervalo.atividade().getId(), validada(selecao, intervalo.atividade()));
+            }
+        }
+
+        // Divide a programação em trechos delimitados por início/fim. Cada minuto
+        // de relógio conta uma vez no evento, mesmo se houver atividades simultâneas.
+        // O participante recebe crédito nos trechos de uma atividade que escolheu
+        // e cuja presença foi validada. Períodos diferentes são somados.
+        TreeSet<LocalDateTime> limites = new TreeSet<>();
+        intervalos.forEach(i -> { limites.add(i.inicio()); limites.add(i.fim()); });
+        List<LocalDateTime> pontos = List.copyOf(limites);
         long total = 0;
         long presentes = 0;
-        List<IntervaloAtividade> bloco = new ArrayList<>();
-        LocalDateTime fimBloco = null;
-        for (IntervaloAtividade atual : intervalos) {
-            if (!bloco.isEmpty() && !atual.inicio().isBefore(fimBloco)) {
-                long[] carga = computarBloco(bloco, selecoesAtivas);
-                total += carga[0];
-                presentes += carga[1];
-                bloco.clear();
-                fimBloco = null;
-            }
-            bloco.add(atual);
-            if (fimBloco == null || atual.fim().isAfter(fimBloco)) fimBloco = atual.fim();
-        }
-        if (!bloco.isEmpty()) {
-            long[] carga = computarBloco(bloco, selecoesAtivas);
-            total += carga[0];
-            presentes += carga[1];
+        for (int i = 0; i + 1 < pontos.size(); i++) {
+            LocalDateTime inicioTrecho = pontos.get(i);
+            LocalDateTime fimTrecho = pontos.get(i + 1);
+            long minutosTrecho = ChronoUnit.MINUTES.between(inicioTrecho, fimTrecho);
+            if (minutosTrecho <= 0) continue;
+
+            boolean existeAtividade = intervalos.stream().anyMatch(intervalo -> cobre(
+                    intervalo, inicioTrecho, fimTrecho));
+            if (!existeAtividade) continue;
+            total += minutosTrecho;
+
+            boolean participantePresente = intervalos.stream().anyMatch(intervalo ->
+                    Boolean.TRUE.equals(presencaValidada.get(intervalo.atividade().getId()))
+                            && cobre(intervalo, inicioTrecho, fimTrecho));
+            if (participantePresente) presentes += minutosTrecho;
         }
 
         double percentual = total == 0 ? 0.0 : Math.round((presentes * 10000.0) / total) / 100.0;
@@ -99,42 +112,43 @@ public class CalcularFrequenciaCertificadoService implements CalcularFrequenciaC
                 percentual, presentes, total, elegivel);
     }
 
-    private long[] computarBloco(List<IntervaloAtividade> bloco, Map<Long, Inscricao> selecoesAtivas) {
-        long duracaoMaxima = 0;
-        boolean presenteNoBloco = false;
-        for (IntervaloAtividade intervalo : bloco) {
-            duracaoMaxima = Math.max(duracaoMaxima, intervalo.minutos());
-            Inscricao selecao = selecoesAtivas.get(intervalo.atividade().getId());
-            if (selecao != null && validada(selecao, intervalo.atividade())) presenteNoBloco = true;
-        }
-        return new long[]{duracaoMaxima, presenteNoBloco ? duracaoMaxima : 0};
+    private boolean cobre(IntervaloAtividade intervalo, LocalDateTime inicio, LocalDateTime fim) {
+        return !intervalo.inicio().isAfter(inicio) && !intervalo.fim().isBefore(fim);
     }
 
     private boolean validada(Inscricao inscricao, Atividade atividade) {
         List<Frequencia> marcacoes = frequenciaRepository.listarPorInscricao(Math.toIntExact(inscricao.getId()));
+        var correcaoOrganizador = marcacoes.stream()
+                .filter(f -> "CORRECAO_ORGANIZADOR".equalsIgnoreCase(f.getOrigem()))
+                .max(Comparator.comparing(Frequencia::getDataHora)
+                        .thenComparing(f -> f.getId() == null ? 0 : f.getId()));
+        if (correcaoOrganizador.isPresent()) return correcaoOrganizador.get().isPresente();
         TipoFrequenciaEnum politica = atividade.getTipoFrequencia();
         if (politica == TipoFrequenciaEnum.CHECKIN) {
-            return marcacoes.stream().anyMatch(f -> f.isPresente() && "CHECKIN".equalsIgnoreCase(f.getTipo()));
+            return marcacoes.stream().anyMatch(f -> f.isPresente() && "CHECKIN".equalsIgnoreCase(f.getTipo())
+                    && !"CORRECAO_ORGANIZADOR".equalsIgnoreCase(f.getOrigem()));
         }
         if (politica == TipoFrequenciaEnum.ENTRADA_SAIDA) {
-            boolean entrada = marcacoes.stream().anyMatch(f -> f.isPresente() && "QR_ENTRADA".equalsIgnoreCase(f.getOrigem()));
-            boolean saida = marcacoes.stream().anyMatch(f -> f.isPresente() && "QR_SAIDA".equalsIgnoreCase(f.getOrigem()));
+            boolean entrada = marcacoes.stream().anyMatch(f -> f.isPresente()
+                    && List.of("QR_ENTRADA", "BUSCA_ENTRADA").contains(f.getOrigem().toUpperCase()));
+            boolean saida = marcacoes.stream().anyMatch(f -> f.isPresente()
+                    && List.of("QR_SAIDA", "BUSCA_SAIDA").contains(f.getOrigem().toUpperCase()));
             return entrada && saida;
         }
         return marcacoes.stream()
                 .filter(f -> "MANUAL".equalsIgnoreCase(f.getTipo()))
-                .max(Comparator.comparing(Frequencia::getDataHora))
+                .max(Comparator.comparing(Frequencia::getDataHora)
+                        .thenComparing(f -> f.getId() == null ? 0 : f.getId()))
                 .map(Frequencia::isPresente)
                 .orElse(false);
     }
 
-    private record IntervaloAtividade(Atividade atividade, LocalDateTime inicio, LocalDateTime fim, long minutos) {
+    private record IntervaloAtividade(Atividade atividade, LocalDateTime inicio, LocalDateTime fim) {
         private static IntervaloAtividade de(Atividade atividade) {
             LocalDateTime inicio = LocalDateTime.of(atividade.getData(), atividade.getHoraInicio());
             LocalDateTime fim = LocalDateTime.of(atividade.getData(), atividade.getHoraFim());
             if (fim.isBefore(inicio)) fim = fim.plusDays(1);
-            return new IntervaloAtividade(atividade, inicio, fim,
-                    Math.max(0, ChronoUnit.MINUTES.between(inicio, fim)));
+            return new IntervaloAtividade(atividade, inicio, fim);
         }
     }
 }

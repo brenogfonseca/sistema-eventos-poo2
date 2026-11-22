@@ -94,15 +94,15 @@ Com a API e o PostgreSQL em execução, rode na raiz do projeto:
 mvn javafx:run
 ```
 
-O cliente JavaFX oferece login/cadastro, busca de eventos e programação, inscrição e seleção de atividades, exibição do QR único, leitor de imagem QR, registro de frequência, avaliações, gestão de programação, locais e exportação CSV. O endereço da API pode ser definido por `EVENTOS_API_URL` no ambiente ou no `.env`.
+O cliente JavaFX oferece login/cadastro, busca de eventos e programação, inscrição e seleção de atividades, exibição do QR único, leitor por imagem ou busca de nome/CPF, registro de frequência, correção de presença pelo organizador, vínculo de colaboradores, avaliações, gestão de programação, locais e exportação CSV. O endereço da API pode ser definido por `EVENTOS_API_URL` no ambiente ou no `.env`.
 
 ## Fluxos principais
 
 1. O participante cria uma conta, abre um evento publicado e se inscreve no evento.
 2. Depois da inscrição, escolhe as atividades. A API impede sobreposição de horário e controla as vagas simultaneamente no banco.
-3. A inscrição do evento emite um QR assinado que vale para as atividades escolhidas até o fim do evento, conforme o fuso configurado.
-4. O organizador seleciona a atividade no leitor e registra check-in único, entrada/saída ou validação manual, conforme a política definida para aquela atividade. Cada registro inclui horário, origem e responsável.
-5. O organizador escolhe se a elegibilidade exige 50%, 75%, 100% ou uma quantidade fixa de horas validadas. Atividades simultâneas contam uma vez pela duração da mais longa, inclusive para quem teve a presença validada na atividade simultânea mais curta. A carga impressa no certificado do evento pode ser fixa ou dinâmica, somando as horas validadas do participante. Depois do evento, participantes elegíveis podem baixar o PDF; organizadores também podem emitir certificados de palestrante e apresentador.
+3. A inscrição do evento emite um QR assinado que vale para as atividades escolhidas até o fim do evento, conforme o fuso configurado. Para cada atividade, o organizador pode escolher leitura de QR ou busca por nome/CPF.
+4. O organizador seleciona a atividade no leitor e registra check-in único, entrada/saída ou validação manual, conforme a política definida para aquela atividade. Um colaborador vinculado à atividade também pode registrar presença, mas não pode marcar falta nem corrigir status. Cada registro inclui instante, origem e responsável.
+5. O organizador escolhe se a elegibilidade exige 50%, 75%, 100% ou uma quantidade fixa de horas validadas. Cada trecho simultâneo conta uma vez na carga total do evento e os períodos diferentes se somam; para o participante só contam os trechos das atividades escolhidas e validadas. A carga impressa no certificado pode ser fixa ou dinâmica. Depois do evento, participantes elegíveis podem baixar o PDF; organizadores também podem emitir certificados de palestrante e apresentador.
 6. Organizadores publicam avaliações textuais, de escolha única ou escala numérica. A API só aceita resposta de participante inscrito com frequência validada e protege respostas duplicadas.
 7. Administradores e organizadores exportam relatórios CSV de inscrições e frequência. Resultados de avaliações também podem ser exportados; questionários anônimos não exibem identificação individual.
 
@@ -111,7 +111,8 @@ O cliente JavaFX oferece login/cadastro, busca de eventos e programação, inscr
 - `POST /usuarios` e `POST /auth/login`: cadastro e sessão bearer.
 - `/eventos` e `/atividades`: eventos, programação, modalidades, critérios de frequência e vagas.
 - `/inscricoes/evento`: inscrição no evento, escolha de atividades, cancelamento, QR e frequência para certificado.
-- `POST /frequencias/checkin-qr`: registro de presença com QR, atividade, ação e usuário organizador autenticado.
+- `/frequencias` e `/atividades/{id}/colaboradores`: leitor QR ou por nome/CPF, listagem de atividades autorizadas e equipe por atividade.
+- `POST /frequencias/manual`: correção auditada de presença restrita ao organizador/administrador.
 - `/questionarios`, `/questoes` e `/respostas`: configuração e resposta às avaliações.
 - `/locais` e `/atividades/{id}/pessoas`: locais e pessoas vinculadas à programação.
 - `/relatorios/eventos/{id}/inscricoes.csv` e `/frequencias.csv`: exportações administrativas.
@@ -122,7 +123,7 @@ As rotas privadas exigem `Authorization: Bearer <token>` e `X-Usuario-Id` corres
 
 ## Banco e evolução
 
-As migrações PostgreSQL V1–V9 são aplicadas em ordem e registradas em `schema_migrations`. Não edite migrações que já tenham sido executadas: crie uma nova versão. A camada de persistência de execução é PostgreSQL; classes SQLite antigas permanecem no histórico do código, mas não são ligadas pelo `Main`.
+As migrações PostgreSQL V1–V11 são aplicadas em ordem e registradas em `schema_migrations`. Não edite migrações que já tenham sido executadas: crie uma nova versão. A camada de persistência de execução é PostgreSQL; classes SQLite antigas permanecem no código, mas não são ligadas pelo `Main`.
 
 ## Documentação do projeto
 

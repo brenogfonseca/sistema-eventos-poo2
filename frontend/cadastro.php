@@ -69,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'email'  => $email,
             'senha'  => $senha,
             'perfil' => $perfil, // Sempre 'USUARIO' — perfil padrão de quem se cadastra
+            'cpf'    => preg_replace('/\\D/', '', $_POST['cpf'] ?? ''),
         ];
 
         // 4. Chama a API: POST /usuarios
@@ -153,6 +154,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     required
                     autocomplete="email"
                 >
+            </div>
+
+            <div class="form-grupo">
+                <label for="cpf">CPF <small>(opcional; usado na identificação presencial)</small></label>
+                <input type="text" id="cpf" name="cpf" inputmode="numeric" autocomplete="off"
+                       maxlength="14" placeholder="000.000.000-00"
+                       value="<?= htmlspecialchars($_POST['cpf'] ?? '') ?>">
             </div>
 
             <div class="form-grupo">

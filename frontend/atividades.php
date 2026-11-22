@@ -6,6 +6,8 @@ $idEvento = (int)($_GET['evento_id'] ?? 0);
 if ($idEvento <= 0) { header('Location: eventos.php'); exit; }
 
 $idUsuario = id_usuario_logado();
+$feedbackAtividade = $_SESSION['atividade_feedback'] ?? null;
+unset($_SESSION['atividade_feedback']);
 $erro = '';
 $sucesso = '';
 $resEvento = chamar_api('GET', "/eventos/{$idEvento}", null, headers_autenticados());
@@ -77,11 +79,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'vagas' => $vagas,
             'controlaVagas' => $vagas > 0,
             'tipoFrequencia' => $_POST['tipoFrequencia'] ?? 'CHECKIN',
+            'metodoIdentificacaoCheckin' => $_POST['metodoIdentificacaoCheckin'] ?? 'QR',
             'trilha' => $nomeTrilha !== '' ? ['nome' => $nomeTrilha] : null,
         ];
         $resultado = chamar_api('POST', '/atividades', $dados, headers_autenticados());
         if ($resultado['erro']) $erro = $resultado['msg_erro'] ?: 'Erro ao criar atividade.';
-        else $sucesso = 'Atividade criada com a política de frequência selecionada.';
+        else {
+            $_SESSION['atividade_feedback'] = [
+                'sucesso' => 'Atividade criada com a política de frequência selecionada.',
+                'avisos' => $resultado['corpo']['avisos'] ?? [],
+            ];
+            header('Location: atividades.php?evento_id=' . $idEvento);
+            exit;
+        }
     } elseif ($acao === 'vincular_pessoa' && $podeGerenciar) {
         $idAtividadePessoa = (int)($_POST['id_atividade'] ?? 0);
         $dadosPessoa = [
@@ -146,6 +156,10 @@ ob_start();
 
 <?php if ($sucesso): ?><div class="alerta alerta-sucesso">✅ <?= htmlspecialchars($sucesso) ?></div><?php endif; ?>
 <?php if ($erro): ?><div class="alerta alerta-erro">⚠️ <?= htmlspecialchars($erro) ?></div><?php endif; ?>
+<?php if ($feedbackAtividade): ?>
+    <?php if (!empty($feedbackAtividade['sucesso'])): ?><div class="alerta alerta-sucesso"><?= htmlspecialchars($feedbackAtividade['sucesso']) ?></div><?php endif; ?>
+    <?php foreach (($feedbackAtividade['avisos'] ?? []) as $aviso): ?><div class="alerta alerta-aviso" role="status"><?= htmlspecialchars($aviso) ?></div><?php endforeach; ?>
+<?php endif; ?>
 
 <?php if (!$idUsuario): ?>
     <div class="card"><p>Entre na sua conta para se inscrever e montar sua agenda.</p><a class="btn btn-primario" href="login.php">Entrar</a></div>
@@ -215,12 +229,18 @@ ob_start();
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="form-grupo"><label>Vagas (0 = ilimitado)</label><input type="number" name="vagas" min="0" value="0"></div>
+            <div class="form-grupo"><label>Vagas da atividade (0 = ilimitado)</label><input type="number" name="vagas" min="0" value="0"></div>
             <div class="form-grupo"><label>Critério de presença *</label>
                 <select name="tipoFrequencia" required>
                     <option value="CHECKIN">Check-in único por QR</option>
                     <option value="ENTRADA_SAIDA">Entrada e saída por QR</option>
                     <option value="MANUAL">Validação manual pelo organizador</option>
+                </select>
+            </div>
+            <div class="form-grupo"><label>Identificação no check-in *</label>
+                <select name="metodoIdentificacaoCheckin" required>
+                    <option value="QR">QR Code</option>
+                    <option value="NOME_CPF">Busca por nome ou CPF</option>
                 </select>
             </div>
         </div>
@@ -272,11 +292,11 @@ ob_start();
             <td><?php foreach (($pessoasPorAtividade[$idAtividade] ?? []) as $vinculo): $pessoa = $vinculo['pessoa'] ?? []; $papelVinculo = $vinculo['papel'] ?? ''; ?><div><?= htmlspecialchars($pessoa['nome'] ?? '') ?> <small>(<?= htmlspecialchars($papelVinculo) ?>)</small><?php if ($podeGerenciar && $eventoEncerrado && !empty($evento['certificado']) && in_array($papelVinculo, ['PALESTRANTE', 'APRESENTADOR'], true) && !empty($pessoa['id'])): ?> — <a href="atividades.php?evento_id=<?= $idEvento ?>&certificado_pessoa=<?= (int)$pessoa['id'] ?>&papel=<?= rawurlencode($papelVinculo) ?>">Baixar certificado</a><?php endif; ?></div><?php endforeach; ?></td>
                     <td><a href="avaliacoes.php?atividade_id=<?= $idAtividade ?>">Abrir</a></td>
                     <td><?= !empty($atividade['controlaVagas']) ? (int)($atividade['vagas'] ?? 0) : 'Ilimitadas' ?></td>
-                    <?php if ($podeGerenciar): ?><td><a href="editar_atividade.php?id=<?= $idAtividade ?>">Editar</a><form method="POST" class="inline-form" onsubmit="return confirm('Excluir esta atividade? Só será possível se ainda não houver inscrições.');"><input type="hidden" name="acao" value="excluir_atividade"><input type="hidden" name="id_atividade" value="<?= $idAtividade ?>"><button class="btn btn-perigo" type="submit">Excluir</button></form></td><?php endif; ?>
+                    <?php if ($podeGerenciar): ?><td><a href="editar_atividade.php?id=<?= $idAtividade ?>">Editar</a> · <a href="colaboradores.php?atividade_id=<?= $idAtividade ?>">Colaboradores</a> · <a href="presencas.php?atividade_id=<?= $idAtividade ?>">Presenças</a><form method="POST" class="inline-form" onsubmit="return confirm('Excluir esta atividade? Só será possível se ainda não houver inscrições.');"><input type="hidden" name="acao" value="excluir_atividade"><input type="hidden" name="id_atividade" value="<?= $idAtividade ?>"><button class="btn btn-perigo" type="submit">Excluir</button></form></td><?php endif; ?>
                 </tr>
             <?php endforeach; ?></tbody>
         </table></div>
-        <p class="text-muted mt-sm">O servidor rejeita atividades com horários sobrepostos e inscrições sem vagas.</p>
+        <p class="text-muted mt-sm">Participantes não podem escolher atividades com horários sobrepostos. O sistema avisa sobre colisões de sala, mas permite salvar para o organizador avaliar.</p>
         <button class="btn btn-primario mt-sm" type="submit">Salvar minha agenda</button>
     </form>
     <?php else: ?>
@@ -289,7 +309,7 @@ ob_start();
             <td><?php foreach (($pessoasPorAtividade[(int)($atividade['id'] ?? 0)] ?? []) as $vinculo): $pessoa = $vinculo['pessoa'] ?? []; $papelVinculo = $vinculo['papel'] ?? ''; ?><div><?= htmlspecialchars($pessoa['nome'] ?? '') ?> <small>(<?= htmlspecialchars($papelVinculo) ?>)</small><?php if ($podeGerenciar && $eventoEncerrado && !empty($evento['certificado']) && in_array($papelVinculo, ['PALESTRANTE', 'APRESENTADOR'], true) && !empty($pessoa['id'])): ?> — <a href="atividades.php?evento_id=<?= $idEvento ?>&certificado_pessoa=<?= (int)$pessoa['id'] ?>&papel=<?= rawurlencode($papelVinculo) ?>">Baixar certificado</a><?php endif; ?></div><?php endforeach; ?></td>
             <td><a href="avaliacoes.php?atividade_id=<?= (int)($atividade['id'] ?? 0) ?>">Abrir</a></td>
             <td><?= !empty($atividade['controlaVagas']) ? (int)($atividade['vagas'] ?? 0) : 'Ilimitadas' ?></td>
-            <?php if ($podeGerenciar): ?><td><a href="editar_atividade.php?id=<?= (int)($atividade['id'] ?? 0) ?>">Editar</a><form method="POST" class="inline-form" onsubmit="return confirm('Excluir esta atividade? Só será possível se ainda não houver inscrições.');"><input type="hidden" name="acao" value="excluir_atividade"><input type="hidden" name="id_atividade" value="<?= (int)($atividade['id'] ?? 0) ?>"><button class="btn btn-perigo" type="submit">Excluir</button></form></td><?php endif; ?>
+            <?php if ($podeGerenciar): ?><td><a href="editar_atividade.php?id=<?= (int)($atividade['id'] ?? 0) ?>">Editar</a> · <a href="colaboradores.php?atividade_id=<?= (int)($atividade['id'] ?? 0) ?>">Colaboradores</a> · <a href="presencas.php?atividade_id=<?= (int)($atividade['id'] ?? 0) ?>">Presenças</a><form method="POST" class="inline-form" onsubmit="return confirm('Excluir esta atividade? Só será possível se ainda não houver inscrições.');"><input type="hidden" name="acao" value="excluir_atividade"><input type="hidden" name="id_atividade" value="<?= (int)($atividade['id'] ?? 0) ?>"><button class="btn btn-perigo" type="submit">Excluir</button></form></td><?php endif; ?>
         </tr><?php endforeach; ?></tbody>
     </table></div></div>
     <?php endif; ?>

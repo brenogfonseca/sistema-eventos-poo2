@@ -2,12 +2,12 @@ package br.ueg.eventos.domain.model;
 
 import br.ueg.eventos.domain.exception.RegraNegocioException;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class Frequencia {
 
     private Integer id;
-    private LocalDateTime dataHora;
+    private Instant dataHora;
     private String origem;
     private Integer idResponsavel;
     private boolean presente;
@@ -15,7 +15,7 @@ public class Frequencia {
     private String tipo;
 
     public Frequencia(
-            LocalDateTime dataHora,
+            Instant dataHora,
             String origem,
             Integer idResponsavel,
             boolean presente,
@@ -40,7 +40,7 @@ public class Frequencia {
 
     public Frequencia(
             Integer id,
-            LocalDateTime dataHora,
+            Instant dataHora,
             String origem,
             Integer idResponsavel,
             boolean presente,
@@ -70,7 +70,7 @@ public class Frequencia {
         return id;
     }
 
-    public LocalDateTime getDataHora() {
+    public Instant getDataHora() {
         return dataHora;
     }
 
@@ -103,7 +103,7 @@ public class Frequencia {
     }
 
     private void validarDados(
-            LocalDateTime dataHora,
+            Instant dataHora,
             String origem,
             Integer idResponsavel,
             Integer idInscricao,

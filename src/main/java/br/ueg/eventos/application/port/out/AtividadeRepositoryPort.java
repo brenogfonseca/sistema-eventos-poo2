@@ -12,6 +12,11 @@ public interface AtividadeRepositoryPort {
 
     List<Atividade> listarPorEvento(Long idEvento);
 
+    /** Atividades no mesmo local; a camada de aplicação verifica a sobreposição. */
+    default List<Atividade> listarPorLocal(Long idLocal) {
+        return List.of();
+    }
+
     void excluir(Long id);
 
     /** Atomically consumes one remaining spot when capacity is limited. */

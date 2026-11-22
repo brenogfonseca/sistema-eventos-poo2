@@ -33,7 +33,8 @@ public class CadastrarUsuarioService implements CadastrarUsuarioPort {
                 comando.email,
                 comando.senhaLimpa,
                 hashCriptografado,
-                Perfil.USUARIO
+                Perfil.USUARIO,
+                comando.cpf
         );
 
         return usuarioRepository.salvar(novoUsuario);

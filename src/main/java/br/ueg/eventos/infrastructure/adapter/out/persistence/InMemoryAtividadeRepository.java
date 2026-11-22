@@ -35,7 +35,8 @@ public class InMemoryAtividadeRepository
                     atividade.getVagas(),
                     atividade.getTipo(),
                     atividade.getTipoFrequencia(),
-                    atividade.getTrilha()
+                    atividade.getTrilha(),
+                    atividade.getMetodoIdentificacaoCheckin()
             );
             atividadeSalva.alterarDescricao(atividade.getDescricao());
 
@@ -63,6 +64,18 @@ public class InMemoryAtividadeRepository
             }
         }
 
+        return resultado;
+    }
+
+    @Override
+    public List<Atividade> listarPorLocal(Long idLocal) {
+        if (idLocal == null) return List.of();
+        List<Atividade> resultado = new ArrayList<>();
+        for (Atividade atividade : atividades.values()) {
+            if (atividade.getLocal() != null && idLocal.equals(atividade.getLocal().getId())) {
+                resultado.add(atividade);
+            }
+        }
         return resultado;
     }
 
